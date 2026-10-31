@@ -6,6 +6,9 @@ on:
   issues:
     types: [labeled]
     names: [factory:hello]
+  # The label comes from the factory App, which holds no repository role. gh-aw admits
+  # App senders only through this allowlist.
+  bots: ["td-software-factory"]
 permissions:
   contents: read
   issues: read
