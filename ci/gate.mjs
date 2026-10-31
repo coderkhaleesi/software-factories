@@ -21,18 +21,18 @@ export const PLAN_MARKER = "## Plan for #";
 
 /** @returns {Decision} */
 export function decidePlan(comments, issue, bot) {
-  const login = bot.endsWith("[bot]") ? bot : `${bot}[bot]`;
-  const existing = comments.find((c) => c.user.login === login && c.body.includes(`${PLAN_MARKER}${issue}`));
+  const existing = planComment(comments, issue, bot);
   if (existing !== undefined) {
-    return { allowed: false, reason: `issue #${issue} already has a plan comment by ${login}: ${existing.html_url}` };
+    return { allowed: false, reason: `issue #${issue} already has a plan comment by ${existing.user.login}: ${existing.html_url}` };
   }
   return { allowed: true };
 }
 
-/** The App's plan comment for this issue, or undefined. */
+/** The App's plan comment for this issue, or undefined. "#6" must not match "#66". */
 export function planComment(comments, issue, bot) {
   const login = bot.endsWith("[bot]") ? bot : `${bot}[bot]`;
-  return comments.find((c) => c.user.login === login && c.body.includes(`${PLAN_MARKER}${issue}`));
+  const marker = new RegExp(`^${PLAN_MARKER.replace("#", "\\#")}${issue}(?!\\d)`, "m");
+  return comments.find((c) => c.user.login === login && marker.test(c.body));
 }
 
 /** @returns {Decision} */

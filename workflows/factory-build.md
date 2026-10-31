@@ -30,6 +30,7 @@ steps:
       issue: ${{ github.event.issue.number }}
       bot: td-software-factory
       token: ${{ github.token }}
+      plan-out: /tmp/gh-aw/factory/plan.md
   - name: Toolchain
     uses: ./.github/actions/factory-setup
   - name: Install dependencies
@@ -39,7 +40,8 @@ tools:
   github:
     toolsets: [issues, repos, pull_requests]
   edit:
-  bash: ["uv sync", "uv run", "bash scripts/check.sh", "ls", "cat", "head", "tail", "wc", "find", "rg", "grep", "mkdir", "git status", "git diff", "git log", "git ls-files", "git show", "git add", "git commit"]
+  # Entries are exact commands unless they end in `:*`, which allows any arguments.
+  bash: ["uv sync", "uv run:*", "bash scripts/check.sh", "ls:*", "cat:*", "head:*", "tail:*", "wc:*", "find:*", "rg:*", "grep:*", "mkdir:*", "git status:*", "git diff:*", "git log:*", "git ls-files:*", "git show:*", "git add:*", "git commit:*", "git checkout:*", "git switch:*"]
 safe-outputs:
   create-pull-request:
     max: 1
@@ -62,12 +64,12 @@ max-daily-ai-credits: 1200
 
 Issue: #${{ github.event.issue.number }} in ${{ github.repository }}. Approved by ${{ github.actor }}.
 
-You are the builder in AGENTS.md section 9. The approved plan is the comment on this issue that starts with `## Plan for #${{ github.event.issue.number }}`. Treat it as `PLAN.md`. Nobody is watching, so you cannot ask; a blocked task is reported, never faked.
+You are the builder in AGENTS.md section 9. The approved plan is the planner's comment on this issue; a pre-step has copied it to `/tmp/gh-aw/factory/plan.md`. Read it with `cat`. Treat it as `PLAN.md`. Do not fetch issue comments through the GitHub tool; the file is the plan. Nobody is watching, so you cannot ask; a blocked task is reported, never faked.
 
 ## Order of work
 
 1. Read `AGENTS.md` in full. Section 0 is the only source of commands. Section 6 is the rule your code is held to.
-2. Read the plan comment and the issue. Read every file the plan's Context names.
+2. Read `/tmp/gh-aw/factory/plan.md` and the issue. Read every file the plan's Context names.
 3. The toolchain is installed and `uv sync` has run. Run `bash scripts/check.sh` once before touching anything and note the result.
 4. Create a branch named `factory/issue-${{ github.event.issue.number }}-<slug>`, where the slug is at most 30 characters of lower-case kebab from the issue title.
 5. For each task in order: mark it `[~]` in your working copy of the plan, write the test first when the task has a cheap test target, make the change, run the task's Validate command, and keep the literal output. Mark `[x]` only when the Validate output matches the expected result. Fix the cause when it does not; never weaken a Validate line and never edit a test to make it pass.
@@ -106,7 +108,7 @@ Closes #${{ github.event.issue.number }}
 Built by the factory builder, an AI agent, from the plan on #${{ github.event.issue.number }}.
 ```
 
-Leave the owner line and the three boxes blank. A person fills them. Never attest to a human review.
+Leave the owner line and the three boxes blank. A person fills them. Never attest to a human review. Add no other footer, signature, or link after the disclosure line.
 
 ## Never
 
