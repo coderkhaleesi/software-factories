@@ -1,0 +1,43 @@
+name: Change request
+description: Ask the factory for a change. A person then labels the issue factory:ready to start the planner.
+title: "[change] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The planner reads this issue and the code it touches, then comments a plan. Write acceptance criteria a command or a scripted UI step can check.
+  - type: input
+    id: goal
+    attributes:
+      label: Goal
+      description: One sentence. What is different when this is done.
+      placeholder: The retail support agent refuses refunds above the policy limit and escalates instead.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: A checklist. Each item must be checkable by a command or a scripted UI step, not by reading.
+      value: |
+        - [ ]
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this change must not touch, so the plan stays small.
+    validations:
+      required: true
+  - type: dropdown
+    id: risk
+    attributes:
+      label: Risk class
+      description: From docs/factory/trust-policy.md. The classifier checks the real diff, and the stricter of the two wins.
+      options:
+        - light
+        - full
+        - touches a shared system
+    validations:
+      required: true

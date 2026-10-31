@@ -29,6 +29,8 @@ export const MANIFEST = Object.freeze([
     role: "classifier, five lanes, and the required gate, pinned to the factory ref" },
   { path: ".github/pull_request_template.md", ownership: "managed", source: "templates/github/pull_request_template.md",
     role: "PR body sections and the blank attestation block" },
+  { path: ".github/ISSUE_TEMPLATE/change-request.yml", ownership: "managed", source: "templates/github/ISSUE_TEMPLATE/change-request.yml",
+    role: "the change-request issue form the planner reads" },
   { path: ".github/actions/factory-setup/action.yml", ownership: "seeded", source: "presets/{preset}/setup.yml",
     role: "the project's toolchain action, owned by the project" },
   { path: ".gitignore", ownership: "block", source: "install/gitignore.lines", role: "ignores the agent work log and reports" },
