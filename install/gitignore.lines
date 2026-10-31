@@ -2,3 +2,4 @@
 .agents/todo.md
 .agents/*.tsv
 reports/
+.github/aw/logs/
