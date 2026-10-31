@@ -33,6 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@{{checkout_sha}} # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
@@ -47,6 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@{{checkout_sha}} # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
@@ -61,6 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@{{checkout_sha}} # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
@@ -75,6 +78,7 @@ jobs:
     steps:
       - uses: actions/checkout@{{checkout_sha}} # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
@@ -89,6 +93,7 @@ jobs:
     steps:
       - uses: actions/checkout@{{checkout_sha}} # v7.0.1
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}

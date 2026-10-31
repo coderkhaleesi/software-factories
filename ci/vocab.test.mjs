@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { LANES, PR_BODY_HEADINGS, SECTION0_MARKERS, attestationBlock } from "./factory.mjs";
 import { loadConfig, renderSection0 } from "./config.mjs";
 import { MANIFEST, OWNERSHIPS, renderFootprint } from "../install/manifest.mjs";
-import { FACTORY_ROOT } from "../install/install.mjs";
+import { FACTORY_ROOT, renderOwnTemplate } from "../install/install.mjs";
 
 const read = (p) => readFileSync(join(FACTORY_ROOT, p), "utf8");
 
@@ -51,4 +51,11 @@ test("every uses: line is pinned to a commit SHA with its version, or to the fac
       assert.ok(ok, `${f}: ${line.trim()}`);
     }
   }
+});
+
+test("the factory's own CI equals the template rendered with local actions", () => {
+  const own = renderOwnTemplate(read("templates/github/workflows/ci.yml"));
+  assert.equal(read(".github/workflows/ci.yml"), own, "run: node ci/render-own.mjs");
+  assert.ok(own.includes("uses: ./actions/classify"));
+  assert.ok(!/\{\{(factory_|checkout_)/.test(own), "every placeholder was rendered");
 });

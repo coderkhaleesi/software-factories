@@ -31,6 +31,13 @@ export function factoryRef(root = FACTORY_ROOT) {
   return sha;
 }
 
+/** The factory's own copy of a template: its actions by local path, since the repo is the factory. */
+export function renderOwnTemplate(text) {
+  return renderTemplate(text, "0".repeat(40))
+    .replace(/# Installed by software-factories \(install\.sh\)\. Pinned to factory ref [0-9a-f]{7}\./, "# The factory's own CI, rendered from templates/github/workflows by ci/render-own.mjs.")
+    .replace(/coderkhaleesi\/software-factories\/actions\/([a-z-]+)@0{40} # software-factories 0{7}/g, "./actions/$1");
+}
+
 export function renderTemplate(text, ref) {
   return text.replaceAll("{{factory_repo}}", FACTORY_REPO).replaceAll("{{factory_ref}}", ref)
     .replaceAll("{{factory_ref7}}", ref.slice(0, 7)).replaceAll("{{checkout_sha}}", CHECKOUT_SHA);

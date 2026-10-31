@@ -1,0 +1,24 @@
+# This repository's own toolchain action: Node for the scripts and ESLint, uv for ruff through
+# uvx, and actionlint pinned by release checksum for the lint lane.
+name: factory-setup
+description: Toolchain for the factory's own CI lanes
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: "22"
+    - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        python-version: "3.12"
+    - shell: bash
+      run: |
+        set -euo pipefail
+        version=1.7.12
+        sha=8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        curl -fsSL -o /tmp/actionlint.tar.gz "https://github.com/rhysd/actionlint/releases/download/v${version}/actionlint_${version}_linux_amd64.tar.gz"
+        echo "${sha}  /tmp/actionlint.tar.gz" | sha256sum -c -
+        mkdir -p "$HOME/.local/bin"
+        tar -xzf /tmp/actionlint.tar.gz -C "$HOME/.local/bin" actionlint
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        "$HOME/.local/bin/actionlint" --version
