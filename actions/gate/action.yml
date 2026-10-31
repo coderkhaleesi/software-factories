@@ -1,0 +1,28 @@
+name: factory gate
+description: Decide whether an agent may run for this stage from state on GitHub. Fails the job with the reason when it may not.
+inputs:
+  for:
+    description: The stage, currently plan
+    required: true
+  issue:
+    description: The issue number
+    required: true
+  bot:
+    description: The factory App's login, without the [bot] suffix
+    required: true
+  token:
+    description: A token that can read issues
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        STAGE: ${{ inputs.for }}
+        ISSUE: ${{ inputs.issue }}
+        BOT: ${{ inputs.bot }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT"
