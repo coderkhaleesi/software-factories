@@ -24,7 +24,7 @@ network:
   allowed: [defaults, python]
 steps:
   - name: Refuse to build an issue without a plan or with an open factory pull request
-    uses: coderkhaleesi/software-factories/actions/gate@f41b002400c6aa5dd22a462a618bc5fb883e2348 # software-factories f41b002
+    uses: coderkhaleesi/software-factories/actions/gate@16cebcf0e1f54e52d3595d553e662fb6f246fa84 # software-factories 16cebcf
     with:
       for: build
       issue: ${{ github.event.issue.number }}
