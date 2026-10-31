@@ -16,6 +16,9 @@ inputs:
   plan-out:
     description: For the build stage, the file to write the App's plan comment to
     default: ""
+  safe-outputs:
+    description: The gh-aw safe-outputs file; a blocked decision writes a noop there so the agent is skipped cleanly
+    default: ${{ runner.temp }}/gh-aw/safeoutputs/outputs.jsonl
 runs:
   using: composite
   steps:
@@ -27,10 +30,11 @@ runs:
         GITHUB_TOKEN: ${{ inputs.token }}
         REPO: ${{ github.repository }}
         PLAN_OUT: ${{ inputs.plan-out }}
+        SAFE_OUTPUTS: ${{ inputs.safe-outputs }}
       run: |
         set -euo pipefail
         if [ -n "$PLAN_OUT" ]; then
-          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --plan-out "$PLAN_OUT"
+          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --plan-out "$PLAN_OUT" --safe-outputs "$SAFE_OUTPUTS"
         else
-          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT"
+          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --safe-outputs "$SAFE_OUTPUTS"
         fi

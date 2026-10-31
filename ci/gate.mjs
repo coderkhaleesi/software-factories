@@ -84,13 +84,17 @@ const STAGES = {
 
 /** Tell gh-aw to skip the agent with this reason. The file is JSONL, one safe output per line. */
 export function writeNoop(file, reason) {
+  mkdirSync(dirname(file), { recursive: true });
   appendFileSync(file, `${JSON.stringify({ type: "noop", message: reason })}\n`);
 }
 
 export async function main(argv, env) {
   const { values } = parseArgs({
     args: argv,
-    options: { for: { type: "string" }, repo: { type: "string" }, issue: { type: "string" }, bot: { type: "string" }, "plan-out": { type: "string" } },
+    options: {
+      for: { type: "string" }, repo: { type: "string" }, issue: { type: "string" }, bot: { type: "string" },
+      "plan-out": { type: "string" }, "safe-outputs": { type: "string" },
+    },
   });
   for (const flag of ["for", "repo", "issue", "bot"]) {
     if (values[flag] === undefined) throw new Error(`--${flag} is required`);
@@ -101,8 +105,10 @@ export async function main(argv, env) {
   const decision = await STAGES[values.for](values.repo, values.issue, values.bot, env.GITHUB_TOKEN, values["plan-out"]);
   if (!decision.allowed) {
     process.stdout.write(`gate: the ${values.for} agent will not run. ${decision.reason}\n`);
-    if (typeof env.GH_AW_SAFE_OUTPUTS === "string" && env.GH_AW_SAFE_OUTPUTS !== "") {
-      writeNoop(env.GH_AW_SAFE_OUTPUTS, decision.reason);
+    const file = values["safe-outputs"] !== undefined && values["safe-outputs"] !== "" ? values["safe-outputs"] : env.GH_AW_SAFE_OUTPUTS;
+    if (typeof file === "string" && file !== "") {
+      writeNoop(file, decision.reason);
+      process.stdout.write(`gate: wrote a noop safe output to ${file}; the agent is skipped and the run stays green\n`);
       return 0;
     }
     return 1;

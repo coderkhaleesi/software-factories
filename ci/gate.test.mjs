@@ -39,7 +39,7 @@ test("the builder needs a plan comment, the planned label, and no open factory P
 });
 
 test("a blocked decision inside a gh-aw job writes a noop safe output", () => {
-  const file = join(mkdtempSync(join(tmpdir(), "gate-")), "outputs.jsonl");
+  const file = join(mkdtempSync(join(tmpdir(), "gate-")), "safeoutputs", "outputs.jsonl");
   writeNoop(file, "already planned");
   assert.deepEqual(JSON.parse(readFileSync(file, "utf8").trim()), { type: "noop", message: "already planned" });
 });
