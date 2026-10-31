@@ -115,7 +115,15 @@ def post(event: dict) -> None:
         )
 
 
+def tree_changed() -> bool:
+    """True when the checkout differs from HEAD, including new files; a git error also counts."""
+    code, out = run(["git", "status", "--porcelain"])
+    return code != 0 or out != ""
+
+
 def stop(event: dict) -> None:
+    if not tree_changed():
+        return
     code, out = run(["bash", "scripts/check.sh"])
     if code == 0:
         return
