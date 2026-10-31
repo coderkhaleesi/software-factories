@@ -1,0 +1,36 @@
+# Installed by software-factories (install.sh). Pinned to factory ref {{factory_ref7}}.
+# The deterministic step of the trust policy's light class: when the planner has labelled an
+# issue factory:light and factory:planned, apply factory:approved through the App so the builder
+# starts. A person applies factory:approved for every other class.
+name: Factory light approve
+on:
+  issues:
+    types: [labeled]
+permissions:
+  contents: read
+jobs:
+  approve:
+    if: ${{ github.event.label.name == 'factory:light' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          permission-issues: write
+      - shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          LABELS: ${{ toJSON(github.event.issue.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          if ! echo "$LABELS" | grep -q '"factory:planned"'; then
+            echo "issue #$ISSUE carries factory:light without factory:planned; not approving" >&2
+            exit 1
+          fi
+          gh issue edit "$ISSUE" --repo "$REPO" --add-label factory:approved
+          echo "applied factory:approved to #$ISSUE (light class)"

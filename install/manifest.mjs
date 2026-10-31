@@ -27,6 +27,8 @@ export const MANIFEST = Object.freeze([
   { path: ".codex/hooks/guard.py", ownership: "managed", source: ".codex/hooks/guard.py", role: "hook implementation" },
   { path: ".github/workflows/ci.yml", ownership: "rendered", source: "templates/github/workflows/ci.yml", render: "template",
     role: "classifier, five lanes, and the required gate, pinned to the factory ref" },
+  { path: ".github/workflows/factory-light-approve.yml", ownership: "rendered", source: "templates/github/workflows/factory-light-approve.yml", render: "template",
+    role: "applies factory:approved to light-class issues through the App" },
   { path: ".github/pull_request_template.md", ownership: "managed", source: "templates/github/pull_request_template.md",
     role: "PR body sections and the blank attestation block" },
   { path: ".github/ISSUE_TEMPLATE/change-request.yml", ownership: "managed", source: "templates/github/ISSUE_TEMPLATE/change-request.yml",

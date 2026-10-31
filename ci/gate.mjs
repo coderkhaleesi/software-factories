@@ -3,14 +3,18 @@
  * on GitHub before the agent starts, so re-labelling an issue or re-running a workflow cannot
  * repeat an agent's work.
  *
- *   node ci/gate.mjs --for plan --repo owner/repo --issue N --bot td-software-factory
+ *   node ci/gate.mjs --for plan|build --repo owner/repo --issue N --bot td-software-factory
  *
- * Exit 0 when the agent may run. Exit 1 with the reason when it may not. Any API error propagates.
+ * Exit 0 when the agent may run. When it may not: inside a gh-aw agent job (GH_AW_SAFE_OUTPUTS is
+ * set) write a noop safe output with the reason and exit 0, so the run ends green with the agent
+ * skipped; elsewhere exit 1 with the reason. Any API error propagates.
  *
  * @typedef {{ allowed: true } | { allowed: false, reason: string }} Decision
  */
 
+import { appendFileSync } from "node:fs";
 import { parseArgs } from "node:util";
+import { BRANCH_PREFIX } from "./factory.mjs";
 
 export const PLAN_MARKER = "## Plan for #";
 
@@ -24,6 +28,17 @@ export function decidePlan(comments, issue, bot) {
   return { allowed: true };
 }
 
+/** @returns {Decision} */
+export function decideBuild({ pulls, comments, labels }, issue, bot) {
+  const plan = decidePlan(comments, issue, bot);
+  if (plan.allowed) return { allowed: false, reason: `issue #${issue} has no plan comment by the factory App; label it factory:ready first` };
+  if (!labels.includes("factory:planned")) return { allowed: false, reason: `issue #${issue} is not labelled factory:planned` };
+  const prefix = `${BRANCH_PREFIX}${issue}-`;
+  const open = pulls.find((pr) => pr.state === "open" && pr.head.ref.startsWith(prefix));
+  if (open !== undefined) return { allowed: false, reason: `issue #${issue} already has an open factory pull request: ${open.html_url}` };
+  return { allowed: true };
+}
+
 async function githubJson(url, token) {
   const response = await fetch(url, {
     headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "software-factories gate" },
@@ -32,13 +47,30 @@ async function githubJson(url, token) {
   return response.json();
 }
 
-export async function listIssueComments(repo, issue, token) {
-  const comments = [];
+async function listAll(url, token) {
+  const items = [];
   for (let page = 1; ; page += 1) {
-    const batch = await githubJson(`https://api.github.com/repos/${repo}/issues/${issue}/comments?per_page=100&page=${page}`, token);
-    comments.push(...batch);
-    if (batch.length < 100) return comments;
+    const batch = await githubJson(`${url}${url.includes("?") ? "&" : "?"}per_page=100&page=${page}`, token);
+    items.push(...batch);
+    if (batch.length < 100) return items;
   }
+}
+
+export const listIssueComments = (repo, issue, token) => listAll(`https://api.github.com/repos/${repo}/issues/${issue}/comments`, token);
+export const listOpenPulls = (repo, token) => listAll(`https://api.github.com/repos/${repo}/pulls?state=open`, token);
+export const getIssue = (repo, issue, token) => githubJson(`https://api.github.com/repos/${repo}/issues/${issue}`, token);
+
+const STAGES = {
+  plan: async (repo, issue, bot, token) => decidePlan(await listIssueComments(repo, issue, token), issue, bot),
+  build: async (repo, issue, bot, token) => {
+    const [pulls, comments, issueData] = await Promise.all([listOpenPulls(repo, token), listIssueComments(repo, issue, token), getIssue(repo, issue, token)]);
+    return decideBuild({ pulls, comments, labels: issueData.labels.map((l) => l.name) }, issue, bot);
+  },
+};
+
+/** Tell gh-aw to skip the agent with this reason. The file is JSONL, one safe output per line. */
+export function writeNoop(file, reason) {
+  appendFileSync(file, `${JSON.stringify({ type: "noop", message: reason })}\n`);
 }
 
 export async function main(argv, env) {
@@ -51,14 +83,17 @@ export async function main(argv, env) {
   }
   if (typeof env.GITHUB_TOKEN !== "string" || env.GITHUB_TOKEN === "") throw new Error("GITHUB_TOKEN is required");
   if (!/^\d+$/.test(values.issue)) throw new Error(`--issue must be a number, got ${JSON.stringify(values.issue)}`);
-  if (values.for !== "plan") throw new Error(`--for ${values.for} is not implemented yet; stages: plan`);
-  const comments = await listIssueComments(values.repo, values.issue, env.GITHUB_TOKEN);
-  const decision = decidePlan(comments, values.issue, values.bot);
+  if (!(values.for in STAGES)) throw new Error(`--for ${values.for} is not a stage; stages: ${Object.keys(STAGES).join(", ")}`);
+  const decision = await STAGES[values.for](values.repo, values.issue, values.bot, env.GITHUB_TOKEN);
   if (!decision.allowed) {
-    process.stdout.write(`gate: the planner will not run. ${decision.reason}\n`);
+    process.stdout.write(`gate: the ${values.for} agent will not run. ${decision.reason}\n`);
+    if (typeof env.GH_AW_SAFE_OUTPUTS === "string" && env.GH_AW_SAFE_OUTPUTS !== "") {
+      writeNoop(env.GH_AW_SAFE_OUTPUTS, decision.reason);
+      return 0;
+    }
     return 1;
   }
-  process.stdout.write(`gate: no plan comment on #${values.issue} yet; the planner may run\n`);
+  process.stdout.write(`gate: the ${values.for} agent may run on #${values.issue}\n`);
   return 0;
 }
 

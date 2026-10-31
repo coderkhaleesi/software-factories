@@ -45,6 +45,7 @@ What lands in the project, and who owns each file:
 | `.codex/hooks.json` | rendered | Codex hooks, paths rewritten to the project |
 | `.codex/hooks/guard.py` | managed | hook implementation |
 | `.github/workflows/ci.yml` | rendered | classifier, five lanes, and the required gate, pinned to the factory ref |
+| `.github/workflows/factory-light-approve.yml` | rendered | applies factory:approved to light-class issues through the App |
 | `.github/pull_request_template.md` | managed | PR body sections and the blank attestation block |
 | `.github/ISSUE_TEMPLATE/change-request.yml` | managed | the change-request issue form the planner reads |
 | `.github/actions/factory-setup/action.yml` | seeded | the project's toolchain action, owned by the project |
