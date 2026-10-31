@@ -1,0 +1,17 @@
+{
+  "name": "software-factories",
+  "private": true,
+  "type": "module",
+  "description": "Agentic software factory: GitHub Agentic Workflows plus deterministic CI gates, installed into projects",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test",
+    "lint": "bash scripts/check.sh"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "typescript-eslint": "8.72.1"
+  }
+}

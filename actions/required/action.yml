@@ -1,0 +1,15 @@
+name: factory required
+description: The one gate branch protection requires. Judges every lane from toJSON(needs).
+inputs:
+  needs:
+    description: toJSON(needs) from the required job
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        NEEDS_JSON: ${{ inputs.needs }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/../../ci/required.mjs"

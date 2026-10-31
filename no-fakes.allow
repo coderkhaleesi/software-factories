@@ -1,0 +1,11 @@
+# Files approved to use test doubles, and files whose domain vocabulary trips the text rule.
+# Only the user edits this file. One entry per line, globs relative to this file's directory,
+# a reason after '#'. Two forms:
+#
+#   <glob>  # <reason>            nothing in scripts/check_no_fakes.py runs on the file
+#   <glob>  text-off  # <reason>  the comment and docstring word rule is off; every structural
+#                                 rule (identifiers, stub bodies, swallowed exceptions,
+#                                 fallbacks, test-double imports) still runs
+#
+# tests/integration/test_payments.py  # Stripe sandbox unreachable from CI
+# demos/simulate_users/*  text-off  # the domain is simulation

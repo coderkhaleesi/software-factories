@@ -1,0 +1,106 @@
+# Installed by software-factories (install.sh). Pinned to factory ref {{factory_ref7}}.
+# Edit factory.json for commands and lanes. Re-run install.sh to move the pins.
+name: CI
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      selection: ${{ steps.classify.outputs.selection }}
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - id: classify
+        uses: {{factory_repo}}/actions/classify@{{factory_ref}} # software-factories {{factory_ref7}}
+  static:
+    needs: changes
+    if: ${{ fromJSON(needs.changes.outputs.selection).lanes.static }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          lane: static
+          selection: ${{ needs.changes.outputs.selection }}
+  unit:
+    needs: changes
+    if: ${{ fromJSON(needs.changes.outputs.selection).lanes.unit }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          lane: unit
+          selection: ${{ needs.changes.outputs.selection }}
+  integration:
+    needs: changes
+    if: ${{ fromJSON(needs.changes.outputs.selection).lanes.integration }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          lane: integration
+          selection: ${{ needs.changes.outputs.selection }}
+  acceptance:
+    needs: changes
+    if: ${{ fromJSON(needs.changes.outputs.selection).lanes.acceptance }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          lane: acceptance
+          selection: ${{ needs.changes.outputs.selection }}
+  artifact:
+    needs: changes
+    if: ${{ fromJSON(needs.changes.outputs.selection).lanes.artifact }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          lane: artifact
+          selection: ${{ needs.changes.outputs.selection }}
+  required:
+    needs: [changes, static, unit, integration, acceptance, artifact]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: {{factory_repo}}/actions/required@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          needs: ${{ toJSON(needs) }}

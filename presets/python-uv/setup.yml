@@ -1,0 +1,10 @@
+# Seeded once into .github/actions/factory-setup/action.yml and then owned by the project.
+# It holds the toolchain and nothing else. Dependency install is the `install` command in factory.json.
+name: factory-setup
+description: Toolchain for this project's CI lanes
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      with:
+        python-version: "3.12"

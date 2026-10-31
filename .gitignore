@@ -1,0 +1,6 @@
+.agents/
+.ruff_cache/
+node_modules/
+__pycache__/
+.pytest_cache/
+reports/

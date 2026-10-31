@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "preset": "python-uv",
+  "commands": {
+    "install": { "label": "Install", "run": "uv sync" },
+    "test": { "label": "Test", "run": "uv run pytest" },
+    "lint": { "label": "Lint", "run": "uv run ruff check . && uv run ruff format --check ." },
+    "typecheck": { "label": "Typecheck", "run": "uv run mypy src tools" },
+    "nofakes": { "label": "No-fakes gate", "run": "bash scripts/check.sh" }
+  },
+  "paths": {
+    "docs": ["docs/**", "*.md", "skills/**/*.md"],
+    "lockfiles": ["uv.lock"],
+    "protected": []
+  },
+  "lanes": {
+    "static": { "paths": [], "fast": ["lint", "typecheck", "nofakes"], "full": { "commands": [], "secrets": [] } },
+    "unit": { "paths": ["src/**", "tools/**", "tests/**", "demos/**", "pyproject.toml", "uv.lock"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
+    "integration": { "off": "no container dependency until tracing code lands (T8)" },
+    "acceptance": { "off": "the verification skill is generated in T8" },
+    "artifact": { "off": "deps-diff and secret scanning arrive in T10" }
+  },
+  "artifact": { "ships_bundle": false }
+}

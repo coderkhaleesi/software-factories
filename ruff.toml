@@ -1,0 +1,24 @@
+line-length = 100
+
+[lint]
+extend-select = [
+  "E722",   # bare `except:`
+  "BLE001", # `except Exception:` / `except BaseException:`
+  "S110",   # try/except/pass
+  "S112",   # try/except/continue
+  "TRY",    # exception anti-patterns (raise-within-try, verbose re-raise, ...)
+  "FIX",    # TODO / FIXME / XXX / HACK comments
+  "ERA001", # commented-out code
+  "PIE790", # redundant `pass`
+  "T20",    # leftover print()
+]
+ignore = [
+  "TRY003", # long messages in `raise` are fine; we want descriptive errors
+  "I001",   # import order flips when a first-party module doesn't exist yet (test-first)
+]
+
+[lint.per-file-ignores]
+"tests/**" = ["T20"]
+"scripts/**" = ["T20"]
+".claude/**" = ["T20"]
+".codex/**" = ["T20"]

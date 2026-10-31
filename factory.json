@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "preset": "node-npm",
+  "commands": {
+    "install": { "label": "Install", "run": "npm ci" },
+    "test": { "label": "Test", "run": "node --test && python3 -m unittest discover -s tests" },
+    "lint": { "label": "Lint", "run": "actionlint .github/workflows/*.yml" },
+    "compile": { "label": "Compile workflows", "run": "gh aw compile --verbose" },
+    "nofakes": { "label": "No-fakes gate", "run": "bash scripts/check.sh", "note": "see section 6" }
+  },
+  "paths": {
+    "docs": ["docs/**", "*.md", "workflows/**/*.md"],
+    "lockfiles": ["package-lock.json"],
+    "protected": ["actions/**", "templates/**", "install/**", "install.sh"]
+  },
+  "lanes": {
+    "static": { "paths": [], "fast": ["lint", "nofakes"], "full": { "commands": [], "secrets": [] } },
+    "unit": { "paths": ["ci/**", "install/**", "install.sh", "templates/**", "presets/**", "tests/**", "scripts/**", "package.json", "package-lock.json"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
+    "integration": { "off": "the factory has no external system to integrate with" },
+    "acceptance": { "off": "the factory's acceptance test is the pilot's end-to-end trial (T14)" },
+    "artifact": { "off": "deps-diff and secret scanning arrive in T10" }
+  },
+  "artifact": { "ships_bundle": false }
+}

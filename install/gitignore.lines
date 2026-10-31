@@ -1,0 +1,4 @@
+.agents/PLAN.md
+.agents/todo.md
+.agents/*.tsv
+reports/

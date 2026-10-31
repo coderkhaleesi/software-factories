@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "preset": "node-npm",
+  "commands": {
+    "install": { "label": "Install", "run": "npm ci" },
+    "test": { "label": "Test", "run": "npm test" },
+    "lint": { "label": "Lint", "run": "npm run lint" },
+    "typecheck": { "label": "Typecheck", "run": "npm run typecheck" },
+    "nofakes": { "label": "No-fakes gate", "run": "bash scripts/check.sh" }
+  },
+  "paths": {
+    "docs": ["docs/**", "*.md"],
+    "lockfiles": ["package-lock.json"],
+    "protected": []
+  },
+  "lanes": {
+    "static": { "paths": [], "fast": ["lint", "typecheck", "nofakes"], "full": { "commands": [], "secrets": [] } },
+    "unit": { "paths": ["src/**", "test/**", "tests/**", "package.json", "package-lock.json"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
+    "integration": { "off": "no integration lane configured yet" },
+    "acceptance": { "off": "no verification skill generated yet" },
+    "artifact": { "off": "no artifact lane configured yet" }
+  },
+  "artifact": { "ships_bundle": false }
+}

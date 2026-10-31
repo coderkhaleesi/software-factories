@@ -1,0 +1,29 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.py post",
+            "timeout": 60,
+            "statusMessage": "Checking for mocks and fallbacks"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard.py stop",
+            "timeout": 120,
+            "statusMessage": "Running no-fakes gate"
+          }
+        ]
+      }
+    ]
+  }
+}

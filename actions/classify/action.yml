@@ -1,0 +1,30 @@
+name: factory classify
+description: Classify the change into the tier and lanes CI runs. Output `selection` is one JSON line.
+inputs:
+  config:
+    description: Path to the project's factory.json
+    default: factory.json
+outputs:
+  selection:
+    description: The Selection JSON every lane keys on
+    value: ${{ steps.classify.outputs.selection }}
+runs:
+  using: composite
+  steps:
+    - id: classify
+      shell: bash
+      env:
+        EVENT: ${{ github.event_name }}
+        BASE: ${{ github.event.pull_request.base.sha }}
+        HEAD: ${{ github.event.pull_request.head.sha }}
+        LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+        if [ "$EVENT" = pull_request ]; then
+          selection="$(node "$GITHUB_ACTION_PATH/../../ci/classify.mjs" --event "$EVENT" --base "$BASE" --head "$HEAD" --labels-json "$LABELS" --config "$CONFIG")"
+        else
+          selection="$(node "$GITHUB_ACTION_PATH/../../ci/classify.mjs" --event "$EVENT" --config "$CONFIG")"
+        fi
+        echo "$selection"
+        echo "selection=$selection" >> "$GITHUB_OUTPUT"

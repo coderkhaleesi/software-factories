@@ -1,0 +1,23 @@
+name: factory lane
+description: Run one lane's commands from factory.json
+inputs:
+  lane:
+    description: static, unit, integration, acceptance, or artifact
+    required: true
+  selection:
+    description: The changes job's selection output
+    required: true
+  config:
+    description: Path to the project's factory.json
+    default: factory.json
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        LANE: ${{ inputs.lane }}
+        SELECTION: ${{ inputs.selection }}
+        CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/../../ci/lane.mjs" --lane "$LANE" --selection "$SELECTION" --config "$CONFIG"
