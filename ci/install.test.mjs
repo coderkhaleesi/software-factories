@@ -64,7 +64,7 @@ test("a first install creates the footprint, renders section 0 and the pins, and
   const codex = readFileSync(join(target, ".codex/hooks.json"), "utf8");
   assert.ok(codex.includes(`'${target}/.codex/hooks/guard.py'`), "codex hooks point at the target");
   assert.ok(!codex.includes(FACTORY_ROOT), "codex hooks no longer name the factory checkout");
-  assert.equal(readFileSync(join(target, ".gitignore"), "utf8"), ".venv/\n.agents/PLAN.md\n.agents/todo.md\n.agents/*.tsv\nreports/\n");
+  assert.equal(readFileSync(join(target, ".gitignore"), "utf8"), ".venv/\n.agents/PLAN.md\n.agents/todo.md\n.agents/*.tsv\nreports/\n.github/aw/logs/\n");
   assert.ok(existsSync(join(target, ".github/actions/factory-setup/action.yml")));
 
   git(target, "add", "-A");
