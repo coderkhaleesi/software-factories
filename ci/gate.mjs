@@ -12,7 +12,8 @@
  * @typedef {{ allowed: true } | { allowed: false, reason: string }} Decision
  */
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { BRANCH_PREFIX } from "./factory.mjs";
 
@@ -28,10 +29,17 @@ export function decidePlan(comments, issue, bot) {
   return { allowed: true };
 }
 
+/** The App's plan comment for this issue, or undefined. */
+export function planComment(comments, issue, bot) {
+  const login = bot.endsWith("[bot]") ? bot : `${bot}[bot]`;
+  return comments.find((c) => c.user.login === login && c.body.includes(`${PLAN_MARKER}${issue}`));
+}
+
 /** @returns {Decision} */
 export function decideBuild({ pulls, comments, labels }, issue, bot) {
-  const plan = decidePlan(comments, issue, bot);
-  if (plan.allowed) return { allowed: false, reason: `issue #${issue} has no plan comment by the factory App; label it factory:ready first` };
+  if (planComment(comments, issue, bot) === undefined) {
+    return { allowed: false, reason: `issue #${issue} has no plan comment by the factory App; label it factory:ready first` };
+  }
   if (!labels.includes("factory:planned")) return { allowed: false, reason: `issue #${issue} is not labelled factory:planned` };
   const prefix = `${BRANCH_PREFIX}${issue}-`;
   const open = pulls.find((pr) => pr.state === "open" && pr.head.ref.startsWith(prefix));
@@ -62,9 +70,15 @@ export const getIssue = (repo, issue, token) => githubJson(`https://api.github.c
 
 const STAGES = {
   plan: async (repo, issue, bot, token) => decidePlan(await listIssueComments(repo, issue, token), issue, bot),
-  build: async (repo, issue, bot, token) => {
+  build: async (repo, issue, bot, token, planOut) => {
     const [pulls, comments, issueData] = await Promise.all([listOpenPulls(repo, token), listIssueComments(repo, issue, token), getIssue(repo, issue, token)]);
-    return decideBuild({ pulls, comments, labels: issueData.labels.map((l) => l.name) }, issue, bot);
+    const decision = decideBuild({ pulls, comments, labels: issueData.labels.map((l) => l.name) }, issue, bot);
+    if (decision.allowed && planOut !== undefined) {
+      mkdirSync(dirname(planOut), { recursive: true });
+      writeFileSync(planOut, `${planComment(comments, issue, bot).body}\n`);
+      process.stdout.write(`gate: wrote the plan comment to ${planOut}\n`);
+    }
+    return decision;
   },
 };
 
@@ -76,7 +90,7 @@ export function writeNoop(file, reason) {
 export async function main(argv, env) {
   const { values } = parseArgs({
     args: argv,
-    options: { for: { type: "string" }, repo: { type: "string" }, issue: { type: "string" }, bot: { type: "string" } },
+    options: { for: { type: "string" }, repo: { type: "string" }, issue: { type: "string" }, bot: { type: "string" }, "plan-out": { type: "string" } },
   });
   for (const flag of ["for", "repo", "issue", "bot"]) {
     if (values[flag] === undefined) throw new Error(`--${flag} is required`);
@@ -84,7 +98,7 @@ export async function main(argv, env) {
   if (typeof env.GITHUB_TOKEN !== "string" || env.GITHUB_TOKEN === "") throw new Error("GITHUB_TOKEN is required");
   if (!/^\d+$/.test(values.issue)) throw new Error(`--issue must be a number, got ${JSON.stringify(values.issue)}`);
   if (!(values.for in STAGES)) throw new Error(`--for ${values.for} is not a stage; stages: ${Object.keys(STAGES).join(", ")}`);
-  const decision = await STAGES[values.for](values.repo, values.issue, values.bot, env.GITHUB_TOKEN);
+  const decision = await STAGES[values.for](values.repo, values.issue, values.bot, env.GITHUB_TOKEN, values["plan-out"]);
   if (!decision.allowed) {
     process.stdout.write(`gate: the ${values.for} agent will not run. ${decision.reason}\n`);
     if (typeof env.GH_AW_SAFE_OUTPUTS === "string" && env.GH_AW_SAFE_OUTPUTS !== "") {

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { decideBuild, decidePlan, main, writeNoop, PLAN_MARKER } from "./gate.mjs";
+import { decideBuild, decidePlan, main, planComment, writeNoop, PLAN_MARKER } from "./gate.mjs";
 
 const comment = (login, body) => ({ user: { login }, body, html_url: `https://example.test/${login}` });
 
@@ -42,4 +42,11 @@ test("a blocked decision inside a gh-aw job writes a noop safe output", () => {
   const file = join(mkdtempSync(join(tmpdir(), "gate-")), "outputs.jsonl");
   writeNoop(file, "already planned");
   assert.deepEqual(JSON.parse(readFileSync(file, "utf8").trim()), { type: "noop", message: "already planned" });
+});
+
+test("planComment returns the App's plan for this issue and nothing else", () => {
+  const mine = comment("td-software-factory[bot]", `${PLAN_MARKER}6\n\n## Goal`);
+  const comments = [comment("coderkhaleesi", `${PLAN_MARKER}6`), comment("td-software-factory[bot]", `${PLAN_MARKER}66`), mine];
+  assert.equal(planComment(comments, "6", "td-software-factory"), mine);
+  assert.equal(planComment(comments, "7", "td-software-factory"), undefined);
 });

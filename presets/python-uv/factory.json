@@ -6,6 +6,7 @@
     "test": { "label": "Test", "run": "uv run pytest" },
     "lint": { "label": "Lint", "run": "uv run ruff check . && uv run ruff format --check ." },
     "typecheck": { "label": "Typecheck", "run": "uv run mypy src tools" },
+    "structure": { "label": "Structure", "run": "uv run python tools/validate_structure.py" },
     "nofakes": { "label": "No-fakes gate", "run": "bash scripts/check.sh" }
   },
   "paths": {
@@ -14,7 +15,7 @@
     "protected": []
   },
   "lanes": {
-    "static": { "paths": [], "fast": ["lint", "typecheck", "nofakes"], "full": { "commands": [], "secrets": [] } },
+    "static": { "paths": [], "fast": ["lint", "typecheck", "structure", "nofakes"], "full": { "commands": [], "secrets": [] } },
     "unit": { "paths": ["src/**", "tools/**", "tests/**", "demos/**", "pyproject.toml", "uv.lock"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
     "integration": { "off": "no container dependency until tracing code lands (T8)" },
     "acceptance": { "off": "the verification skill is generated in T8" },

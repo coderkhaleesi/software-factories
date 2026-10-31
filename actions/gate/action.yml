@@ -13,6 +13,9 @@ inputs:
   token:
     description: A token that can read issues
     required: true
+  plan-out:
+    description: For the build stage, the file to write the App's plan comment to
+    default: ""
 runs:
   using: composite
   steps:
@@ -23,6 +26,11 @@ runs:
         BOT: ${{ inputs.bot }}
         GITHUB_TOKEN: ${{ inputs.token }}
         REPO: ${{ github.repository }}
+        PLAN_OUT: ${{ inputs.plan-out }}
       run: |
         set -euo pipefail
-        node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT"
+        if [ -n "$PLAN_OUT" ]; then
+          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --plan-out "$PLAN_OUT"
+        else
+          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT"
+        fi
