@@ -9,6 +9,8 @@ on:
         description: The issue to comment on and label
         required: true
         type: string
+concurrency:
+  job-discriminator: ${{ github.run_id }}
 permissions:
   contents: read
   issues: read
