@@ -38,8 +38,16 @@ ABSTRACT_DECORATORS = {"abstractmethod", "overload"}
 PYTEST_SKIP_ATTRS = {"skip", "skipif", "xfail"}
 BROAD_EXCEPTIONS = {"Exception", "BaseException"}
 DOUBLE_MODULES = {
-    "unittest.mock", "mock", "pytest_mock", "responses", "respx", "requests_mock",
-    "moto", "fakeredis", "freezegun", "faker",
+    "unittest.mock",
+    "mock",
+    "pytest_mock",
+    "responses",
+    "respx",
+    "requests_mock",
+    "moto",
+    "fakeredis",
+    "freezegun",
+    "faker",
 }
 PATCH_ATTRS = {"setattr", "setitem", "delattr", "delitem"}
 
@@ -61,7 +69,9 @@ def load_profile() -> str:
     lines = [ln.strip() for ln in PROFILE_FILE.read_text().splitlines()]
     values = [ln for ln in lines if ln and not ln.startswith("#")]
     if len(values) != 1 or values[0] not in PROFILES:
-        raise SystemExit(f"error: {PROFILE_FILE.name} must contain one of {sorted(PROFILES)}, got {values}")
+        raise SystemExit(
+            f"error: {PROFILE_FILE.name} must contain one of {sorted(PROFILES)}, got {values}"
+        )
     return values[0]
 
 
@@ -106,7 +116,9 @@ def name_of(node: ast.AST) -> str:
 
 def is_test_file(path: Path) -> bool:
     return (
-        path.name.startswith("test_") or path.name.endswith("_test.py") or path.name == "conftest.py"
+        path.name.startswith("test_")
+        or path.name.endswith("_test.py")
+        or path.name == "conftest.py"
         or any(part in {"test", "tests"} for part in path.parts[:-1])
     )
 
@@ -123,19 +135,29 @@ def is_abstract(fn: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 
 
 def docstring_of(body: list[ast.stmt]) -> ast.Constant | None:
-    if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant) \
-            and isinstance(body[0].value.value, str):
+    if (
+        body
+        and isinstance(body[0], ast.Expr)
+        and isinstance(body[0].value, ast.Constant)
+        and isinstance(body[0].value.value, str)
+    ):
         return body[0].value
     return None
 
 
 def is_ellipsis(stmt: ast.stmt) -> bool:
-    return isinstance(stmt, ast.Expr) and isinstance(stmt.value, ast.Constant) and stmt.value.value is Ellipsis
+    return (
+        isinstance(stmt, ast.Expr)
+        and isinstance(stmt.value, ast.Constant)
+        and stmt.value.value is Ellipsis
+    )
 
 
 def is_stub_body(body: list[ast.stmt]) -> bool:
     stmts = body[1:] if docstring_of(body) else body
-    return not stmts or (len(stmts) == 1 and (isinstance(stmts[0], ast.Pass) or is_ellipsis(stmts[0])))
+    return not stmts or (
+        len(stmts) == 1 and (isinstance(stmts[0], ast.Pass) or is_ellipsis(stmts[0]))
+    )
 
 
 def is_silent_body(body: list[ast.stmt]) -> bool:
@@ -202,7 +224,9 @@ class Checker(ast.NodeVisitor):
         self.check_docstring(node.body)
         abstract = is_abstract(node) or self.protocol_depth > 0
         if not abstract and is_stub_body(node.body):
-            hint = "" if self.strict else "; if it's a deliberate stub, raise NotImplementedError(...)"
+            hint = (
+                "" if self.strict else "; if it's a deliberate stub, raise NotImplementedError(...)"
+            )
             self.report(node, f"function '{node.name}' has an empty or stub body{hint}")
         for dec in node.decorator_list:
             parts = name_of(dec).split(".")
@@ -230,7 +254,9 @@ class Checker(ast.NodeVisitor):
 
     def check_double_import(self, node: ast.AST, full: str, top: str) -> None:
         if not self.doubles_ok and (full in DOUBLE_MODULES or top in DOUBLE_MODULES):
-            where = "outside test files" if not self.strict else "without approval in no-fakes.allow"
+            where = (
+                "outside test files" if not self.strict else "without approval in no-fakes.allow"
+            )
             self.report(node, f"imports test-double library '{full}' {where}")
 
     def visit_Import(self, node: ast.Import) -> None:
@@ -250,9 +276,14 @@ class Checker(ast.NodeVisitor):
         reraises = any(isinstance(n, ast.Raise) for stmt in node.body for n in ast.walk(stmt))
         if not reraises:
             if self.strict:
-                self.report(node, "except block doesn't re-raise; handle it for real or let it propagate")
+                self.report(
+                    node, "except block doesn't re-raise; handle it for real or let it propagate"
+                )
             elif is_broad_handler(node):
-                self.report(node, "broad except without re-raise swallows every error; catch the specific one")
+                self.report(
+                    node,
+                    "broad except without re-raise swallows every error; catch the specific one",
+                )
             elif is_silent_body(node.body):
                 self.report(node, "except block silently ignores the error")
         self.generic_visit(node)
@@ -263,8 +294,12 @@ class Checker(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Raise(self, node: ast.Raise) -> None:
-        if self.strict and self.abstract_depth == 0 and node.exc is not None \
-                and name_of(node.exc) == "NotImplementedError":
+        if (
+            self.strict
+            and self.abstract_depth == 0
+            and node.exc is not None
+            and name_of(node.exc) == "NotImplementedError"
+        ):
             self.report(node, "raises NotImplementedError outside an abstract method")
         self.generic_visit(node)
 
@@ -273,14 +308,20 @@ class Checker(ast.NodeVisitor):
         if callee in {"os.getenv", "os.environ.get"} and len(node.args) >= 2:
             default = node.args[1]
             if not (isinstance(default, ast.Constant) and default.value is None):
-                self.soft(node, f"{callee}() with a default value; fail fast on missing config instead")
+                self.soft(
+                    node, f"{callee}() with a default value; fail fast on missing config instead"
+                )
         if callee in {"pytest.skip", "pytest.xfail"}:
             self.report(node, f"{callee}() call")
         if callee.split(".")[-1] == "suppress":
             broad = not node.args or any(name_of(a) in BROAD_EXCEPTIONS for a in node.args)
             if self.strict or broad:
                 self.report(node, "contextlib.suppress swallows errors")
-        if callee.startswith("monkeypatch.") and callee.split(".")[-1] in PATCH_ATTRS and not self.doubles_ok:
+        if (
+            callee.startswith("monkeypatch.")
+            and callee.split(".")[-1] in PATCH_ATTRS
+            and not self.doubles_ok
+        ):
             self.report(node, f"{callee}() patches real behavior")
         self.generic_visit(node)
 
@@ -298,8 +339,11 @@ def iter_py_files(paths: list[str]) -> list[Path]:
     for p in map(Path, paths):
         if p.is_dir():
             files.extend(
-                f for f in p.rglob("*.py")
-                if not any(part.startswith(".") or part in SKIP_DIRS for part in f.relative_to(p).parts)
+                f
+                for f in p.rglob("*.py")
+                if not any(
+                    part.startswith(".") or part in SKIP_DIRS for part in f.relative_to(p).parts
+                )
             )
         elif p.suffix == ".py":
             files.append(p)
@@ -323,8 +367,12 @@ def allow_mode(path: Path, root: Path, entries: list[tuple[str, str]]) -> str | 
 
 
 def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--allowlist", type=Path, default=ALLOWLIST, help="allowlist file (default: no-fakes.allow)")
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument(
+        "--allowlist", type=Path, default=ALLOWLIST, help="allowlist file (default: no-fakes.allow)"
+    )
     parser.add_argument("paths", nargs="+")
     args = parser.parse_args(argv)
     profile = load_profile()

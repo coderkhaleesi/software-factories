@@ -1,8 +1,8 @@
 """Claude Code hooks that enforce AGENTS.md section 6.
 
-  pre   PreToolUse: block edits to the rules, checkers, allowlist, and hooks.
-  post  PostToolUse: run the no-fakes checks on the file just edited.
-  stop  Stop: run scripts/check.sh before the agent may finish.
+pre   PreToolUse: block edits to the rules, checkers, allowlist, and hooks.
+post  PostToolUse: run the no-fakes checks on the file just edited.
+stop  Stop: run scripts/check.sh before the agent may finish.
 """
 
 import json
@@ -15,7 +15,12 @@ from pathlib import Path
 ROOT = Path(os.environ.get("CLAUDE_PROJECT_DIR") or Path(__file__).resolve().parents[2])
 
 PROTECTED_FILES = {
-    "AGENTS.md", "CLAUDE.md", "no-fakes.allow", "no-fakes.profile", "scripts/check.sh", "scripts/check_no_fakes.py",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "no-fakes.allow",
+    "no-fakes.profile",
+    "scripts/check.sh",
+    "scripts/check_no_fakes.py",
 }
 PROTECTED_DIRS = (".claude/",)
 PROTECTED_BASENAMES = re.compile(r"^(\.?ruff\.toml|eslint\.config\.[cm]?[jt]s)$")
@@ -25,7 +30,9 @@ BASH_NAMES = re.compile(
     r"ruff\.toml|eslint\.config"
 )
 # ~/.claude (user config, plugins, transcripts) isn't this project's .claude/.
-HOME_CLAUDE = re.compile(r"(~|\$HOME|\$\{HOME\}|" + re.escape(str(Path.home())) + r")/\.claude\b\S*")
+HOME_CLAUDE = re.compile(
+    r"(~|\$HOME|\$\{HOME\}|" + re.escape(str(Path.home())) + r")/\.claude\b\S*"
+)
 BASH_SAFE = re.compile(
     r"(python3?|bash|sh)\s+(\./)?scripts/(check_no_fakes\.py|check\.sh)(\s+[\w./-]+)*|\d?>&\d|>\s*/dev/null"
 )
@@ -95,11 +102,17 @@ def post(event: dict) -> None:
             "If you can't do it for real, mark the task [!] and tell the user.\n\n" + out
         )
     if "warning" in out:
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PostToolUse",
-            "additionalContext": "No-fakes warnings in the file you just edited. Fix them or mention "
-                                 "them to the user:\n" + out,
-        }}))
+        print(
+            json.dumps(
+                {
+                    "hookSpecificOutput": {
+                        "hookEventName": "PostToolUse",
+                        "additionalContext": "No-fakes warnings in the file you just edited. Fix them or mention "
+                        "them to the user:\n" + out,
+                    }
+                }
+            )
+        )
 
 
 def stop(event: dict) -> None:
@@ -110,11 +123,15 @@ def stop(event: dict) -> None:
         # Already sent back once; let the turn end so the user sees the failure instead of a loop.
         print(json.dumps({"systemMessage": f"No-fakes gate still failing:\n{out}"}))
         return
-    print(json.dumps({
-        "decision": "block",
-        "reason": "scripts/check.sh failed. Fix every violation before finishing, or mark the task [!] "
-                  "and explain what's missing.\n\n" + out,
-    }))
+    print(
+        json.dumps(
+            {
+                "decision": "block",
+                "reason": "scripts/check.sh failed. Fix every violation before finishing, or mark the task [!] "
+                "and explain what's missing.\n\n" + out,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

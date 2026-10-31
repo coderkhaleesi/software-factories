@@ -34,7 +34,9 @@ def build(persona: str) -> str | None:
 def run_checker(allowlist: Path, *files: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, str(CHECKER), "--allowlist", str(allowlist), *map(str, files)],
-        check=False, capture_output=True, text=True,
+        check=False,
+        capture_output=True,
+        text=True,
     )
 
 
