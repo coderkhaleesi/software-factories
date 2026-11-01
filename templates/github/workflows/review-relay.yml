@@ -1,0 +1,19 @@
+# Installed by software-factories (install.sh).
+# A pull_request_review workflow runs the workflow file from the pull request, so it must not
+# judge the pull request. This one only completes, and PR readiness runs on its completion from
+# the default branch (workflow_run). Keep it without permissions and without steps that act.
+name: Review relay
+on:
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+permissions: {}
+jobs:
+  relay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - shell: bash
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          STATE: ${{ github.event.review.state }}
+        run: echo "review $STATE on #$PR; PR readiness follows this run from the default branch"

@@ -1,0 +1,44 @@
+name: factory readiness
+description: Judge a pull request's readiness from the API and post one commit status on its head. Runs on the default branch; checks out nothing from the pull request.
+inputs:
+  pr:
+    description: The pull request number (pull_request_target events)
+    default: ""
+  branch:
+    description: The head branch to resolve the open pull request from (workflow_run events)
+    default: ""
+  token:
+    description: A token that can read pull requests and write statuses
+    required: true
+outputs:
+  ready:
+    description: "true when the status is success"
+    value: ${{ steps.judge.outputs.ready }}
+  draft:
+    description: "true when the pull request is a draft"
+    value: ${{ steps.judge.outputs.draft }}
+  factory:
+    description: "true when the head is a factory branch"
+    value: ${{ steps.judge.outputs.factory }}
+  number:
+    description: The pull request number, empty when none was found
+    value: ${{ steps.judge.outputs.number }}
+  head_sha:
+    description: The pull request head SHA, empty when none was found
+    value: ${{ steps.judge.outputs.head_sha }}
+runs:
+  using: composite
+  steps:
+    - id: judge
+      shell: bash
+      env:
+        PR: ${{ inputs.pr }}
+        BRANCH: ${{ inputs.branch }}
+        GITHUB_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+      run: |
+        set -euo pipefail
+        args=(--repo "$REPO")
+        if [ -n "$PR" ]; then args+=(--pr "$PR"); fi
+        if [ -n "$BRANCH" ]; then args+=(--branch "$BRANCH"); fi
+        node "$GITHUB_ACTION_PATH/../../ci/pr-readiness.mjs" "${args[@]}"

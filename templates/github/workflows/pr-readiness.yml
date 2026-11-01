@@ -1,0 +1,64 @@
+# Installed by software-factories (install.sh). Pinned to factory ref {{factory_ref7}}.
+# The second human touch. Runs on the default branch for every pull request event and after CI
+# or a review completes, judges readiness from the API, and posts one commit status on the head.
+# Two deterministic steps follow: a factory draft whose CI passed is marked ready, and a factory
+# pull request a person attested in an approving review gets auto-merge armed through the App.
+# Branch protection then merges it when every required check is green. Agents never merge.
+name: PR readiness
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
+  workflow_run:
+    workflows: [CI, Review relay]
+    types: [completed]
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+concurrency:
+  group: readiness-${{ github.event.pull_request.number || github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+jobs:
+  readiness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - id: readiness
+        uses: {{factory_repo}}/actions/readiness@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          pr: ${{ github.event.pull_request.number }}
+          branch: ${{ github.event.workflow_run.head_branch }}
+          token: ${{ github.token }}
+      - id: app
+        if: ${{ steps.readiness.outputs.factory == 'true' && steps.readiness.outputs.number != '' }}
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.FACTORY_APP_ID }}
+          private-key: ${{ secrets.FACTORY_APP_PRIVATE_KEY }}
+          permission-pull-requests: write
+          permission-contents: write
+      - name: Mark a factory draft ready once CI passes
+        if: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.name == 'CI' && github.event.workflow_run.conclusion == 'success' && steps.readiness.outputs.factory == 'true' && steps.readiness.outputs.draft == 'true' && github.event.workflow_run.head_sha == steps.readiness.outputs.head_sha }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.readiness.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh pr ready "$PR" --repo "$REPO"
+          echo "marked #$PR ready for review: CI passed on its head"
+      - name: Arm auto-merge on an attested factory pull request
+        if: ${{ steps.readiness.outputs.ready == 'true' && steps.readiness.outputs.factory == 'true' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.readiness.outputs.number }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR" --repo "$REPO" --auto --squash
+          echo "auto-merge armed on #$PR; branch protection merges it when every required check is green"

@@ -17,6 +17,7 @@ import { appendFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { BRANCH_PREFIX, FIX_ATTEMPTS } from "./factory.mjs";
+import { getIssue, listIssueComments, listOpenPulls, listOpenPullsByHead, listPullCommits } from "./github.mjs";
 
 export const PLAN_MARKER = "## Plan for #";
 
@@ -73,29 +74,6 @@ export function decideFix({ pull, commits }, branch, headSha, bot) {
   }
   return { allowed: true, attempt: attempts + 1 };
 }
-
-async function githubJson(url, token) {
-  const response = await fetch(url, {
-    headers: { authorization: `Bearer ${token}`, accept: "application/vnd.github+json", "user-agent": "software-factories gate" },
-  });
-  if (!response.ok) throw new Error(`GET ${url} failed: ${response.status} ${await response.text()}`);
-  return response.json();
-}
-
-async function listAll(url, token) {
-  const items = [];
-  for (let page = 1; ; page += 1) {
-    const batch = await githubJson(`${url}${url.includes("?") ? "&" : "?"}per_page=100&page=${page}`, token);
-    items.push(...batch);
-    if (batch.length < 100) return items;
-  }
-}
-
-export const listIssueComments = (repo, issue, token) => listAll(`https://api.github.com/repos/${repo}/issues/${issue}/comments`, token);
-export const listOpenPulls = (repo, token) => listAll(`https://api.github.com/repos/${repo}/pulls?state=open`, token);
-export const listOpenPullsByHead = (repo, branch, token) => listAll(`https://api.github.com/repos/${repo}/pulls?state=open&head=${repo.split("/")[0]}:${branch}`, token);
-export const listPullCommits = (repo, number, token) => listAll(`https://api.github.com/repos/${repo}/pulls/${number}/commits`, token);
-export const getIssue = (repo, issue, token) => githubJson(`https://api.github.com/repos/${repo}/issues/${issue}`, token);
 
 function writeJson(file, value, what) {
   mkdirSync(dirname(file), { recursive: true });

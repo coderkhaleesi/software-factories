@@ -41,5 +41,6 @@ test("every action pin in workflows/*.md carries the current action and the scri
 });
 
 test("the gate action runs gate.mjs and its imports", () => {
-  assert.deepEqual(pathsRunBy("gate"), ["actions/gate", "ci/factory.mjs", "ci/gate.mjs"]);
+  assert.deepEqual(pathsRunBy("gate"), ["actions/gate", "ci/factory.mjs", "ci/gate.mjs", "ci/github.mjs"]);
+  assert.deepEqual(pathsRunBy("readiness"), ["actions/readiness", "ci/factory.mjs", "ci/github.mjs", "ci/pr-readiness.mjs"]);
 });
