@@ -10,7 +10,8 @@ on:
   roles: [admin, maintainer, write]
   # The App opens factory pull requests.
   bots: ["td-software-factory"]
-if: ${{ startsWith(github.event.pull_request.head.ref, 'factory/') }}
+# Only the builder's branches, factory/issue-<N>-<slug>; a person's factory/* branch is not reviewed.
+if: ${{ startsWith(github.event.pull_request.head.ref, 'factory/issue-') }}
 permissions:
   contents: read
   pull-requests: read

@@ -8,7 +8,7 @@ on:
   workflow_run:
     workflows: ["CI"]
     types: [completed]
-    branches: ["factory/**"]
+    branches: ["factory/issue-**"]
     conclusion: [failure]
   roles: [admin, maintainer, write]
   # CI on a pull request the App opened or pushed to runs as the App.

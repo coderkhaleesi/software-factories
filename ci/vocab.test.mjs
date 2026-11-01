@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import { LANES, PR_BODY_HEADINGS, SECTION0_MARKERS, attestationBlock } from "./factory.mjs";
+import { BRANCH_PREFIX, LANES, PR_BODY_HEADINGS, SECTION0_MARKERS, attestationBlock } from "./factory.mjs";
 import { loadConfig, renderSection0 } from "./config.mjs";
 import { MANIFEST, OWNERSHIPS, renderFootprint } from "../install/manifest.mjs";
 import { FACTORY_ROOT, renderOwnTemplate } from "../install/install.mjs";
@@ -93,4 +93,9 @@ test("every workflow that pushes code sets threat-detection continue-on-error: f
     assert.ok(at >= 0, `${file}: pushes code but has no safe-outputs threat-detection block`);
     assert.equal(lines[at + 1], "    continue-on-error: false", `${file}: threat-detection must fail the run on a finding`);
   }
+});
+
+test("the reviewer and the fixer trigger only on the builder's branch prefix", () => {
+  assert.match(read("workflows/factory-review.md"), new RegExp(`startsWith\\(github\\.event\\.pull_request\\.head\\.ref, '${BRANCH_PREFIX}'\\)`));
+  assert.match(read("workflows/factory-pr-fix.md"), new RegExp(`branches: \\["${BRANCH_PREFIX}\\*\\*"\\]`));
 });
