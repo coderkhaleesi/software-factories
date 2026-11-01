@@ -54,6 +54,8 @@ safe-outputs:
   add-labels:
     allowed: [factory:stuck, factory:needs-input]
     max: 1
+  threat-detection:
+    continue-on-error: false
 timeout-minutes: 45
 max-turns: 200
 max-ai-credits: 800
