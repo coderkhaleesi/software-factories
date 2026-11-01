@@ -47,10 +47,18 @@ runs:
         curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v$VERSION/gitleaks_${VERSION}_linux_x64.tar.gz" -o "$tool/gitleaks.tgz"
         echo "$SHA256  $tool/gitleaks.tgz" | sha256sum -c -
         tar -xzf "$tool/gitleaks.tgz" -C "$tool" gitleaks
+        report=reports/artifact/gitleaks.json
+        set +e
         if [ -n "$BASE" ]; then
           echo "gitleaks $VERSION over the commits $BASE..$HEAD"
-          "$tool/gitleaks" git . --log-opts "$BASE..$HEAD" --no-banner --redact --exit-code 1 --report-format json --report-path reports/artifact/gitleaks.json
+          "$tool/gitleaks" git . --log-opts "$BASE..$HEAD" --no-banner --redact --exit-code 1 --report-format json --report-path "$report"
         else
           echo "gitleaks $VERSION over the checked-out tree"
-          "$tool/gitleaks" dir . --no-banner --redact --exit-code 1 --report-format json --report-path reports/artifact/gitleaks.json
+          "$tool/gitleaks" dir . --no-banner --redact --exit-code 1 --report-format json --report-path "$report"
         fi
+        code=$?
+        set -e
+        if [ "$code" -ne 0 ] && [ -s "$report" ]; then
+          node -e 'const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); for (const f of r) console.log(`::error file=${f.File},line=${f.StartLine}::gitleaks ${f.RuleID} in ${f.File}:${f.StartLine}${f.Commit ? ` (commit ${f.Commit.slice(0, 7)})` : ""}; the secret itself is redacted`)' "$report"
+        fi
+        exit "$code"
