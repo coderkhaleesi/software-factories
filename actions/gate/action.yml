@@ -1,20 +1,29 @@
 name: factory gate
-description: Decide whether an agent may run for this stage from state on GitHub. Fails the job with the reason when it may not.
+description: Decide whether an agent may run for this stage from state on GitHub. A blocked decision writes a noop safe output so the agent is skipped and the run stays green.
 inputs:
   for:
-    description: The stage, currently plan
+    description: "The stage: plan, build, or fix"
     required: true
   issue:
-    description: The issue number
-    required: true
+    description: The issue number (plan and build)
+    default: ""
+  branch:
+    description: The pull request head branch from the failing CI run (fix)
+    default: ""
+  head-sha:
+    description: The head SHA the failing CI run tested (fix); the gate refuses when the branch has moved
+    default: ""
   bot:
     description: The factory App's login, without the [bot] suffix
     required: true
   token:
-    description: A token that can read issues
+    description: A token that can read issues and pull requests
     required: true
   plan-out:
     description: For the build stage, the file to write the App's plan comment to
+    default: ""
+  fix-out:
+    description: For the fix stage, the file to write the pull request number, branch, and attempt number to
     default: ""
   safe-outputs:
     description: The gh-aw safe-outputs file; a blocked decision writes a noop there so the agent is skipped cleanly
@@ -26,15 +35,20 @@ runs:
       env:
         STAGE: ${{ inputs.for }}
         ISSUE: ${{ inputs.issue }}
+        BRANCH: ${{ inputs.branch }}
+        HEAD_SHA: ${{ inputs.head-sha }}
         BOT: ${{ inputs.bot }}
         GITHUB_TOKEN: ${{ inputs.token }}
         REPO: ${{ github.repository }}
         PLAN_OUT: ${{ inputs.plan-out }}
+        FIX_OUT: ${{ inputs.fix-out }}
         SAFE_OUTPUTS: ${{ inputs.safe-outputs }}
       run: |
         set -euo pipefail
-        if [ -n "$PLAN_OUT" ]; then
-          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --plan-out "$PLAN_OUT" --safe-outputs "$SAFE_OUTPUTS"
-        else
-          node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" --for "$STAGE" --repo "$REPO" --issue "$ISSUE" --bot "$BOT" --safe-outputs "$SAFE_OUTPUTS"
-        fi
+        args=(--for "$STAGE" --repo "$REPO" --bot "$BOT" --safe-outputs "$SAFE_OUTPUTS")
+        if [ -n "$ISSUE" ]; then args+=(--issue "$ISSUE"); fi
+        if [ -n "$BRANCH" ]; then args+=(--branch "$BRANCH"); fi
+        if [ -n "$HEAD_SHA" ]; then args+=(--head-sha "$HEAD_SHA"); fi
+        if [ -n "$PLAN_OUT" ]; then args+=(--plan-out "$PLAN_OUT"); fi
+        if [ -n "$FIX_OUT" ]; then args+=(--fix-out "$FIX_OUT"); fi
+        node "$GITHUB_ACTION_PATH/../../ci/gate.mjs" "${args[@]}"
