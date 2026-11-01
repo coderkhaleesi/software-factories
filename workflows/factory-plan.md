@@ -17,7 +17,7 @@ imports:
   - shared/factory.md
 steps:
   - name: Refuse to plan an issue that already has a plan
-    uses: coderkhaleesi/software-factories/actions/gate@12462f92d07b2bbce4014352aee6e82244825d8a # software-factories 12462f9
+    uses: coderkhaleesi/software-factories/actions/gate@4975a5c47f98fc4e95469c6360d98b5398311b81 # software-factories 4975a5c
     with:
       for: plan
       issue: ${{ github.event.issue.number }}
