@@ -96,6 +96,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/artifact@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          pr: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}
       - uses: {{factory_repo}}/actions/lane@{{factory_ref}} # software-factories {{factory_ref7}}
         with:
           lane: artifact

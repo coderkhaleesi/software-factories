@@ -18,7 +18,7 @@
     "unit": { "paths": ["src/**", "test/**", "tests/**", "package.json", "package-lock.json"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
     "integration": { "off": "no integration lane configured yet" },
     "acceptance": { "off": "no verification skill generated yet" },
-    "artifact": { "off": "no artifact lane configured yet" }
+    "artifact": { "paths": [], "fast": [], "full": { "commands": [], "secrets": [] } }
   },
   "artifact": { "ships_bundle": false }
 }

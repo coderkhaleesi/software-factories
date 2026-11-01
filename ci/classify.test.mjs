@@ -12,15 +12,14 @@ const config = loadConfig(new URL("../presets/python-uv/factory.json", import.me
 const pr = (paths, labels = []) => classify({ event: "pull_request", base: "a".repeat(40), head: "b".repeat(40), labels }, paths, config);
 const onLanes = LANES.filter((l) => !("off" in config.lanes[l]));
 
-test("docs-only PR runs static only on the fast tier", () => {
+test("docs-only PR runs static and artifact only, on the fast tier", () => {
   const s = pr(["docs/research/judges.md", "README.md"]);
   assert.equal(s.tier, "fast");
-  assert.deepEqual(s.lanes, { static: true, unit: false, integration: false, acceptance: false, artifact: false });
+  // The secret scan and the dependency check judge every change, so artifact joins static.
+  assert.deepEqual(s.lanes, { static: true, unit: false, integration: false, acceptance: false, artifact: true });
   assert.equal(s.facts.docs_only, true);
   assert.deepEqual(s.facts.unclaimed, []);
-  assert.deepEqual(s.off, config.lanes.integration.off === undefined ? {} : {
-    integration: config.lanes.integration.off, acceptance: config.lanes.acceptance.off, artifact: config.lanes.artifact.off,
-  });
+  assert.deepEqual(s.off, Object.fromEntries(LANES.filter((l) => "off" in config.lanes[l]).map((l) => [l, config.lanes[l].off])));
 });
 
 test("a source change selects unit; an unclaimed path selects every on lane", () => {

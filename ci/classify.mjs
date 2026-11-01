@@ -94,6 +94,8 @@ export function classify(input, paths, config) {
   const off = Object.fromEntries(LANES.filter((lane) => "off" in config.lanes[lane]).map((lane) => [lane, config.lanes[lane].off]));
   const effects = new Effects(onLanes);
   effects.add("factory:static-always", "*", { lanes: ["static"] });
+  // The secret scan and the dependency check judge every change, not only the paths a rule claims.
+  effects.add("factory:artifact-always", "*", { lanes: ["artifact"] });
 
   let facts = null;
   if (input.event === "pull_request") {

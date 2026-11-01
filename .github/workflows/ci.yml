@@ -96,6 +96,12 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
       - uses: ./.github/actions/factory-setup
+      - uses: ./actions/artifact
+        with:
+          base: ${{ github.event.pull_request.base.sha }}
+          head: ${{ github.event.pull_request.head.sha }}
+          pr: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}
       - uses: ./actions/lane
         with:
           lane: artifact

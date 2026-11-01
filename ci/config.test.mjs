@@ -61,7 +61,7 @@ test("commandsForLane runs install first and adds full-tier commands only on ful
   const config = parseConfig(raw);
   assert.deepEqual(commandsForLane(config, "unit", "fast").map((c) => c.id), ["install", "test"]);
   assert.deepEqual(commandsForLane(config, "unit", "full").map((c) => c.id), ["install", "test", "bench"]);
-  assert.throws(() => commandsForLane(config, "artifact", "fast"), /lane artifact is off/);
+  assert.throws(() => commandsForLane(config, "integration", "fast"), /lane integration is off/);
 });
 
 test("section 0 renders one line per command and replaces exactly one marked block", () => {

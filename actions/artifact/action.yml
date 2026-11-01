@@ -1,0 +1,56 @@
+name: factory artifact checks
+description: The artifact lane's factory checks. deps-diff fails when a lockfile adds a package the change request does not name; gitleaks scans the pull request's commits (or the tree, outside a pull request) for secrets. The report lands in reports/artifact/.
+inputs:
+  base:
+    description: The pull request base SHA; empty outside a pull request
+    default: ""
+  head:
+    description: The pull request head SHA; empty outside a pull request
+    default: ""
+  pr:
+    description: The pull request number; empty outside a pull request
+    default: ""
+  token:
+    description: A token that can read pull requests and issues
+    required: true
+  config:
+    description: Path to the project's factory.json
+    default: factory.json
+runs:
+  using: composite
+  steps:
+    - name: deps-diff
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        BASE: ${{ inputs.base }}
+        HEAD: ${{ inputs.head }}
+        PR: ${{ inputs.pr }}
+        CONFIG: ${{ inputs.config }}
+      run: |
+        set -euo pipefail
+        args=(--repo "$REPO" --config "$CONFIG")
+        if [ -n "$BASE" ]; then args+=(--base "$BASE" --head "$HEAD" --pr "$PR"); fi
+        node "$GITHUB_ACTION_PATH/../../ci/deps-diff.mjs" "${args[@]}"
+    - name: gitleaks
+      shell: bash
+      env:
+        BASE: ${{ inputs.base }}
+        HEAD: ${{ inputs.head }}
+        VERSION: 8.30.1
+        SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+      run: |
+        set -euo pipefail
+        tool="$RUNNER_TEMP/gitleaks-$VERSION"
+        mkdir -p "$tool" reports/artifact
+        curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v$VERSION/gitleaks_${VERSION}_linux_x64.tar.gz" -o "$tool/gitleaks.tgz"
+        echo "$SHA256  $tool/gitleaks.tgz" | sha256sum -c -
+        tar -xzf "$tool/gitleaks.tgz" -C "$tool" gitleaks
+        if [ -n "$BASE" ]; then
+          echo "gitleaks $VERSION over the commits $BASE..$HEAD"
+          "$tool/gitleaks" git . --log-opts "$BASE..$HEAD" --no-banner --redact --exit-code 1 --report-format json --report-path reports/artifact/gitleaks.json
+        else
+          echo "gitleaks $VERSION over the checked-out tree"
+          "$tool/gitleaks" dir . --no-banner --redact --exit-code 1 --report-format json --report-path reports/artifact/gitleaks.json
+        fi

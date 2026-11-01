@@ -19,7 +19,7 @@
     "unit": { "paths": ["src/**", "tools/**", "tests/**", "demos/**", "pyproject.toml", "uv.lock"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
     "integration": { "off": "no container dependency until tracing code lands (T8)" },
     "acceptance": { "off": "the verification skill is generated in T8" },
-    "artifact": { "off": "deps-diff and secret scanning arrive in T10" }
+    "artifact": { "paths": [], "fast": [], "full": { "commands": [], "secrets": [] } }
   },
   "artifact": { "ships_bundle": false },
   "mutation": {
