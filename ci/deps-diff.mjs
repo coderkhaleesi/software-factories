@@ -1,9 +1,10 @@
 /**
  * A pull request may add a dependency only when the change request names it. For every lockfile
- * in factory.json's paths.lockfiles that differs between the base and the head, the packages
- * the head adds must each appear in the linked issue's body (the PR body's "Closes #N"), or in
- * the PR body itself when the PR links no issue. Removals and upgrades pass; only new packages
- * are judged. A nightly or dispatch run has no base and judges nothing.
+ * in factory.json's paths.lockfiles that differs between the base and the head, the direct
+ * dependencies the head adds must each appear in the linked issue's body (the PR body's
+ * "Closes #N"), or in the PR body itself when the PR links no issue. Removals, upgrades, and
+ * transitive packages pass; only new direct dependencies are judged. A nightly or dispatch run
+ * has no base and judges nothing.
  *
  *   node ci/deps-diff.mjs --repo owner/repo --base <sha> --head <sha> --pr N [--config factory.json]
  */
@@ -13,28 +14,33 @@ import { parseArgs } from "node:util";
 import { loadConfig } from "./config.mjs";
 import { getIssue, getPull } from "./github.mjs";
 
-/** Package names in a lockfile. uv.lock is TOML with [[package]] tables; package-lock.json maps node_modules paths. */
-export function packagesIn(path, text) {
+/**
+ * The project's direct dependencies in a lockfile, dev groups included. Transitive packages are
+ * not judged: naming the direct dependency is what the change request can do. uv.lock keeps the
+ * project's own [[package]] table (source editable or virtual "."); package-lock.json keeps the
+ * root "" package.
+ */
+export function directDependencies(path, text) {
   if (path.endsWith("uv.lock")) {
-    const names = new Set();
-    for (const block of text.split(/^\[\[package\]\]\s*$/m).slice(1)) {
-      const m = /^name = "([^"]+)"/m.exec(block);
-      if (m === null) throw new Error(`${path}: a [[package]] table has no name`);
-      names.add(m[1]);
-    }
-    return names;
+    const blocks = text.split(/^\[\[package\]\]\s*$/m).slice(1);
+    const project = blocks.find((b) => /^source = \{ (editable|virtual) = "\."\s*\}/m.test(b));
+    if (project === undefined) throw new Error(`${path}: no [[package]] table with source editable or virtual "." (the project itself)`);
+    return new Set([...project.matchAll(/\{ name = "([^"]+)"/g)].map((m) => m[1]));
   }
   if (path.endsWith("package-lock.json")) {
     const lock = JSON.parse(text);
-    if (typeof lock.packages !== "object" || lock.packages === null) throw new Error(`${path}: no "packages" map (lockfileVersion 2 or 3 expected)`);
-    return new Set(Object.keys(lock.packages).filter((k) => k !== "").map((k) => k.slice(k.lastIndexOf("node_modules/") + "node_modules/".length)));
+    if (typeof lock.packages !== "object" || lock.packages === null || typeof lock.packages[""] !== "object") {
+      throw new Error(`${path}: no "packages" map with a root "" entry (lockfileVersion 2 or 3 expected)`);
+    }
+    const root = lock.packages[""];
+    return new Set(["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"].flatMap((k) => (k in root ? Object.keys(root[k]) : [])));
   }
   throw new Error(`${path}: no parser for this lockfile; supported: uv.lock, package-lock.json`);
 }
 
 export function addedPackages(path, baseText, headText) {
-  const base = packagesIn(path, baseText);
-  return [...packagesIn(path, headText)].filter((name) => !base.has(name)).sort();
+  const base = baseText === "" ? new Set() : directDependencies(path, baseText);
+  return [...directDependencies(path, headText)].filter((name) => !base.has(name)).sort();
 }
 
 /** Whether the request names the package, as a whole word, case-insensitively. */

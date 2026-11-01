@@ -1,22 +1,29 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { addedPackages, judge, linkedIssue, main, names, packagesIn } from "./deps-diff.mjs";
+import { addedPackages, directDependencies, judge, linkedIssue, main, names } from "./deps-diff.mjs";
 
-const UV = (pkgs) => `version = 1\nrevision = 3\n\n${pkgs.map((p) => `[[package]]\nname = "${p}"\nversion = "1.0.0"\nsource = { registry = "https://pypi.org/simple" }\n`).join("\n")}`;
-const NPM = (pkgs) => JSON.stringify({ lockfileVersion: 3, packages: { "": { name: "x" }, ...Object.fromEntries(pkgs.map((p) => [`node_modules/${p}`, { version: "1.0.0" }])) } });
+/** A uv.lock with these direct dev dependencies, each also present as a registry package, plus one transitive package. */
+const UV = (pkgs) => [
+  'version = 1\nrevision = 3\n',
+  ...pkgs.map((p) => `[[package]]\nname = "${p}"\nversion = "1.0.0"\nsource = { registry = "https://pypi.org/simple" }\ndependencies = [\n    { name = "transitive-${p}" },\n]\n`),
+  ...pkgs.map((p) => `[[package]]\nname = "transitive-${p}"\nversion = "1.0.0"\nsource = { registry = "https://pypi.org/simple" }\n`),
+  `[[package]]\nname = "proj"\nversion = "0.0.0"\nsource = { editable = "." }\n\n[package.dev-dependencies]\ndev = [\n${pkgs.map((p) => `    { name = "${p}" },`).join("\n")}\n]\n\n[package.metadata.requires-dev]\ndev = [\n${pkgs.map((p) => `    { name = "${p}", specifier = "==1.0.0" },`).join("\n")}\n]\n`,
+].join("\n");
+const NPM = (pkgs, transitive = []) => JSON.stringify({ lockfileVersion: 3, packages: { "": { name: "x", devDependencies: Object.fromEntries(pkgs.map((p) => [p, "1.0.0"])) }, ...Object.fromEntries([...pkgs, ...transitive].map((p) => [`node_modules/${p}`, { version: "1.0.0" }])) } });
 
-test("uv.lock and package-lock.json yield package names; other lockfiles are refused", () => {
-  assert.deepEqual([...packagesIn("uv.lock", UV(["pytest", "mutmut"]))], ["pytest", "mutmut"]);
-  assert.deepEqual([...packagesIn("package-lock.json", NPM(["eslint", "@types/node", "a/node_modules/b"]))], ["eslint", "@types/node", "b"]);
-  assert.throws(() => packagesIn("Cargo.lock", ""), /no parser for this lockfile/);
-  assert.throws(() => packagesIn("uv.lock", "[[package]]\nversion = \"1\"\n"), /has no name/);
-  assert.throws(() => packagesIn("package-lock.json", "{}"), /no "packages" map/);
+test("uv.lock and package-lock.json yield the project's direct dependencies, not transitive ones; other lockfiles are refused", () => {
+  assert.deepEqual([...directDependencies("uv.lock", UV(["pytest", "mutmut"]))], ["pytest", "mutmut"]);
+  assert.deepEqual([...directDependencies("package-lock.json", NPM(["eslint", "@types/node"], ["acorn"]))], ["eslint", "@types/node"]);
+  assert.throws(() => directDependencies("Cargo.lock", ""), /no parser for this lockfile/);
+  assert.throws(() => directDependencies("uv.lock", '[[package]]\nname = "x"\nversion = "1"\nsource = { registry = "r" }\n'), /no \[\[package\]\] table with source editable or virtual/);
+  assert.throws(() => directDependencies("package-lock.json", "{}"), /no "packages" map/);
 });
 
 test("added packages are the head's names the base lacks; upgrades and removals do not count", () => {
   assert.deepEqual(addedPackages("uv.lock", UV(["pytest", "ruff"]), UV(["pytest", "textual", "mutmut"])), ["mutmut", "textual"]);
   assert.deepEqual(addedPackages("uv.lock", "", UV(["a"])), ["a"]);
   assert.deepEqual(addedPackages("uv.lock", UV(["a"]), UV(["a"]).replace('version = "1.0.0"', 'version = "2.0.0"')), []);
+  assert.deepEqual(addedPackages("package-lock.json", NPM(["eslint"]), NPM(["eslint"], ["acorn", "espree"])), []);
 });
 
 test("a package is named when it appears as a whole word, in any case", () => {
