@@ -53,6 +53,9 @@ safe-outputs:
     required-labels: [factory:built]
     if-no-changes: error
     protected-files: request-review
+    # The pre-flight read of branch protection needs administration: read on the App, which it
+    # does not have. GitHub still enforces protection at push time.
+    check-branch-protection: false
   add-comment:
     target: "*"
     max: 1
