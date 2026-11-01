@@ -21,5 +21,9 @@
     "acceptance": { "off": "the verification skill is generated in T8" },
     "artifact": { "off": "deps-diff and secret scanning arrive in T10" }
   },
-  "artifact": { "ships_bundle": false }
+  "artifact": { "ships_bundle": false },
+  "mutation": {
+    "run": "rm -rf mutants reports/mutation && mkdir -p reports/mutation && uv run mutmut run && uv run mutmut export-cicd-stats && cp mutants/mutmut-cicd-stats.json reports/mutation/stats.json && uv run mutmut results > reports/mutation/results.txt",
+    "threshold": 0.8
+  }
 }

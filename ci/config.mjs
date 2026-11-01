@@ -134,7 +134,21 @@ export function parseConfig(raw, source = "factory.json") {
   expect(source, "artifact", raw.artifact, isObject, "an object");
   const shipsBundle = expect(source, "artifact.ships_bundle", raw.artifact.ships_bundle, (v) => typeof v === "boolean", "a boolean");
 
-  return { version: 1, preset, commands, paths, lanes, artifact: { ships_bundle: shipsBundle } };
+  const config = { version: 1, preset, commands, paths, lanes, artifact: { ships_bundle: shipsBundle } };
+  if ("mutation" in raw) config.mutation = parseMutation(source, raw.mutation);
+  return config;
+}
+
+/**
+ * The optional nightly mutation sweep: a command that leaves `reports/mutation/stats.json`
+ * (mutmut's export-cicd-stats shape) and `reports/mutation/results.txt` (`<mutant>: <status>`
+ * lines), and the score below which a "Strengthen tests" issue is filed.
+ */
+function parseMutation(source, raw) {
+  expect(source, "mutation", raw, isObject, "an object");
+  const run = expect(source, "mutation.run", raw.run, isNonEmptyString, "a non-empty string");
+  const threshold = expect(source, "mutation.threshold", raw.threshold, (v) => typeof v === "number" && v > 0 && v <= 1, "a number above 0 and at most 1");
+  return { run, threshold };
 }
 
 export function loadConfig(file) {

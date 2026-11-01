@@ -35,6 +35,8 @@ export const MANIFEST = Object.freeze([
     role: "turns a review event into a run the readiness check can follow from the default branch" },
   { path: ".github/workflows/release-please.yml", ownership: "managed", source: "templates/github/workflows/release-please.yml",
     role: "release pull requests from Conventional Commits, opened through the App" },
+  { path: ".github/workflows/mutation.yml", ownership: "rendered", source: "templates/github/workflows/mutation.yml", render: "template",
+    role: "nightly mutation sweep; score as a neutral check-run, a Factory health comment, and a factory:suggested issue below the threshold" },
   { path: ".github/pull_request_template.md", ownership: "managed", source: "templates/github/pull_request_template.md",
     role: "PR body sections and the blank attestation block" },
   { path: ".github/ISSUE_TEMPLATE/change-request.yml", ownership: "managed", source: "templates/github/ISSUE_TEMPLATE/change-request.yml",

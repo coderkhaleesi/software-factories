@@ -49,6 +49,7 @@ What lands in the project, and who owns each file:
 | `.github/workflows/pr-readiness.yml` | rendered | the readiness status from the default branch; flips a green factory draft to ready and arms auto-merge on attestation |
 | `.github/workflows/review-relay.yml` | managed | turns a review event into a run the readiness check can follow from the default branch |
 | `.github/workflows/release-please.yml` | managed | release pull requests from Conventional Commits, opened through the App |
+| `.github/workflows/mutation.yml` | rendered | nightly mutation sweep; score as a neutral check-run, a Factory health comment, and a factory:suggested issue below the threshold |
 | `.github/pull_request_template.md` | managed | PR body sections and the blank attestation block |
 | `.github/ISSUE_TEMPLATE/change-request.yml` | managed | the change-request issue form the planner reads |
 | `.github/actions/factory-setup/action.yml` | seeded | the project's toolchain action, owned by the project |

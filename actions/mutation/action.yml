@@ -1,0 +1,18 @@
+name: factory mutation sweep
+description: Run the project's mutation command from factory.json and report the score as a neutral check-run, a comment on the Factory health issue, and a factory:suggested issue when below the threshold.
+inputs:
+  token:
+    description: A token that can write checks and issues
+    required: true
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        REPO: ${{ github.repository }}
+        SHA: ${{ github.sha }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        node "$GITHUB_ACTION_PATH/../../ci/mutation.mjs" --repo "$REPO" --sha "$SHA" --run-url "$RUN_URL"

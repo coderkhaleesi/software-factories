@@ -31,3 +31,7 @@ export const getPull = (repo, number, token) => githubJson(`${api}/${repo}/pulls
 export const getIssue = (repo, issue, token) => githubJson(`${api}/${repo}/issues/${issue}`, token);
 export const getPermission = (repo, login, token) => githubJson(`${api}/${repo}/collaborators/${login}/permission`, token);
 export const postStatus = (repo, sha, status, token) => request("POST", `${api}/${repo}/statuses/${sha}`, token, status);
+export const listOpenIssues = (repo, token) => listAll(`${api}/${repo}/issues?state=open`, token);
+export const createIssue = (repo, issue, token) => request("POST", `${api}/${repo}/issues`, token, issue);
+export const createComment = (repo, number, body, token) => request("POST", `${api}/${repo}/issues/${number}/comments`, token, { body });
+export const createCheckRun = (repo, checkRun, token) => request("POST", `${api}/${repo}/check-runs`, token, checkRun);

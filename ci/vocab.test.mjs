@@ -43,7 +43,7 @@ test("the CI template wires changes, every lane, and required with if: always()"
 });
 
 test("every uses: line is pinned to a commit SHA with its version, or to the factory ref, or is local", () => {
-  const files = ["templates/github/workflows/ci.yml", "templates/github/workflows/factory-light-approve.yml", "templates/github/workflows/pr-readiness.yml", "templates/github/workflows/review-relay.yml", "templates/github/workflows/release-please.yml", "presets/python-uv/setup.yml", "presets/node-npm/setup.yml"];
+  const files = ["templates/github/workflows/ci.yml", "templates/github/workflows/factory-light-approve.yml", "templates/github/workflows/pr-readiness.yml", "templates/github/workflows/review-relay.yml", "templates/github/workflows/release-please.yml", "templates/github/workflows/mutation.yml", "presets/python-uv/setup.yml", "presets/node-npm/setup.yml"];
   for (const f of files) {
     for (const line of read(f).split("\n").filter((l) => /^\s*(- )?uses:/.test(l))) {
       const ok = /uses: \.\//.test(line) || /@\{\{factory_ref\}\} # software-factories/.test(line) || /@[0-9a-f]{40} # v\d/.test(line)

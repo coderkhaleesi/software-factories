@@ -1,0 +1,34 @@
+# Installed by software-factories (install.sh). Pinned to factory ref {{factory_ref7}}.
+# Nightly mutation sweep. Runs factory.json's mutation command, keeps the report as an artifact,
+# posts the score as a neutral check-run and on the "Factory health" issue, and files one
+# factory:suggested issue when the score is below the threshold. Nothing here blocks a merge.
+name: Mutation sweep
+on:
+  schedule:
+    - cron: "47 3 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: write
+  issues: write
+concurrency:
+  group: mutation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@{{checkout_sha}} # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/factory-setup
+      - uses: {{factory_repo}}/actions/mutation@{{factory_ref}} # software-factories {{factory_ref7}}
+        with:
+          token: ${{ github.token }}
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutation-report-${{ github.run_id }}
+          path: reports/mutation/
+          if-no-files-found: error
