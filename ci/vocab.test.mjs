@@ -59,3 +59,38 @@ test("the factory's own CI equals the template rendered with local actions", () 
   assert.ok(own.includes("uses: ./actions/classify"));
   assert.ok(!/\{\{(factory_|checkout_)/.test(own), "every placeholder was rendered");
 });
+
+/** The YAML frontmatter of a workflow, as lines, without parsing: the checks below are shape checks on known keys. */
+function frontmatter(file) {
+  const text = read(file);
+  const end = text.indexOf("\n---\n", 4);
+  assert.ok(text.startsWith("---\n") && end > 0, `${file}: no frontmatter`);
+  return text.slice(4, end).split("\n");
+}
+
+const WORKFLOWS = readdirSync(join(FACTORY_ROOT, "workflows")).filter((f) => f.endsWith(".md")).map((f) => `workflows/${f}`);
+
+test("every agentic workflow sets timeout-minutes, max-turns, and max-ai-credits", () => {
+  for (const file of WORKFLOWS) {
+    const lines = frontmatter(file);
+    for (const key of ["timeout-minutes", "max-turns", "max-ai-credits"]) {
+      assert.ok(lines.some((l) => new RegExp(`^${key}: \\d+$`).test(l)), `${file}: no top-level ${key}`);
+    }
+  }
+});
+
+/**
+ * Section 5: threat detection fails the run on a finding in any workflow that pushes code. The
+ * compiled builder shipped with the default, which warns and continues, until a diff of two lock
+ * files showed it; this test reads the source instead.
+ */
+test("every workflow that pushes code sets threat-detection continue-on-error: false", () => {
+  const pushes = /^  (create-pull-request|push-to-pull-request-branch):/;
+  for (const file of WORKFLOWS) {
+    const lines = frontmatter(file);
+    if (!lines.some((l) => pushes.test(l))) continue;
+    const at = lines.indexOf("  threat-detection:");
+    assert.ok(at >= 0, `${file}: pushes code but has no safe-outputs threat-detection block`);
+    assert.equal(lines[at + 1], "    continue-on-error: false", `${file}: threat-detection must fail the run on a finding`);
+  }
+});
