@@ -28,7 +28,7 @@
     },
     "acceptance": {
       "label": "Acceptance",
-      "run": "uv run pytest tests/acceptance",
+      "run": "uv run pytest tests/acceptance/run_features.py",
       "note": "FACTORY_TIER=fast for the keyless features or full for every feature; CI sets it from the lane's tier"
     }
   },

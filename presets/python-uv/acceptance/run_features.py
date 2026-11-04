@@ -1,6 +1,8 @@
 """Drive every feature in tests/acceptance/features/ for the current tier.
 
-Seeded by software-factories and owned by this project. A feature file is Markdown with an H1
+Seeded by software-factories and owned by this project. The file name does not match pytest's
+default `test_*.py` pattern on purpose: the project's plain test command never collects it, and
+the acceptance command names it: `uv run pytest tests/acceptance/run_features.py`. A feature file is Markdown with an H1
 title, one `- Tier: fast` or `- Tier: full` line under its preconditions, and one or more
 ```bash fences under its "## Driving it with" section. The fences run in order from the
 repository root under `bash -euo pipefail`, and the feature passes when they exit 0. The fast

@@ -1,6 +1,6 @@
 # Acceptance feature map
 
-The maintained source for proving this project's user-facing behavior. `tests/acceptance/test_features.py` reads every `*.md` file in this directory except this index, selects the features for the current tier, and runs each one's bash fences from the repository root under `bash -euo pipefail`. A feature passes when its fences exit 0. The fences check the observable end state themselves. A command that prints the right thing but is not checked proves nothing.
+The maintained source for proving this project's user-facing behavior. `tests/acceptance/run_features.py` reads every `*.md` file in this directory except this index, selects the features for the current tier, and runs each one's bash fences from the repository root under `bash -euo pipefail`. A feature passes when its fences exit 0. The fences check the observable end state themselves. A command that prints the right thing but is not checked proves nothing.
 
 ## Feature file contract
 

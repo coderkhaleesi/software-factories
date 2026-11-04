@@ -54,7 +54,7 @@ What lands in the project, and who owns each file:
 | `.github/pull_request_template.md` | managed | PR body sections and the blank attestation block |
 | `.github/ISSUE_TEMPLATE/change-request.yml` | managed | the change-request issue form the planner reads |
 | `.github/actions/factory-setup/action.yml` | seeded | the project's toolchain action, owned by the project |
-| `tests/acceptance/test_features.py` | seeded | the acceptance runner: drives every feature in tests/acceptance/features/ for the lane's tier |
+| `tests/acceptance/run_features.py` | seeded | the acceptance runner; named so a plain pytest run skips it and the lane names it |
 | `tests/acceptance/features/README.md` | seeded | the feature map's contract and index, owned by the project |
 | `.gitignore` | block | ignores the agent work log and reports |
 <!-- footprint:end -->
