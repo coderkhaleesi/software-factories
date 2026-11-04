@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { BRANCH_PREFIX, LANES, PR_BODY_HEADINGS, SECTION0_MARKERS, attestationBlock } from "./factory.mjs";
 import { loadConfig, renderSection0 } from "./config.mjs";
 import { MANIFEST, OWNERSHIPS, renderFootprint } from "../install/manifest.mjs";
-import { FACTORY_ROOT, renderOwnTemplate } from "../install/install.mjs";
+import { FACTORY_ROOT } from "../install/install.mjs";
+import { OWN, renderOwn } from "./render-own.mjs";
 
 const read = (p) => readFileSync(join(FACTORY_ROOT, p), "utf8");
 
@@ -24,7 +25,9 @@ test("every manifest entry has a known ownership and an existing source for ever
   const presets = readdirSync(join(FACTORY_ROOT, "presets"));
   for (const entry of MANIFEST) {
     assert.ok(OWNERSHIPS.includes(entry.ownership), entry.path);
-    for (const preset of presets) assert.ok(existsSync(join(FACTORY_ROOT, entry.source.replace("{preset}", preset))), `${entry.path} source for ${preset}`);
+    for (const preset of presets.filter((p) => entry.when === undefined || entry.when.includes(p))) {
+      assert.ok(existsSync(join(FACTORY_ROOT, entry.source.replace("{preset}", preset))), `${entry.path} source for ${preset}`);
+    }
   }
 });
 
@@ -40,10 +43,27 @@ test("the CI template wires changes, every lane, and required with if: always()"
   assert.deepEqual(jobs, ["changes", ...LANES, "required"]);
   assert.ok(ci.includes(`    needs: [changes, ${LANES.join(", ")}]\n    if: \${{ always() }}`));
   for (const lane of LANES) assert.ok(ci.includes(`if: \${{ fromJSON(needs.changes.outputs.selection).lanes.${lane} }}`), lane);
+  assert.ok(!ci.includes("schedule") && !ci.includes("workflow_dispatch"), "the CI template runs on pull requests only; the full tier is nightly.yml");
+});
+
+test("only the nightly template references the nightly environment, and it runs only on schedule and dispatch", () => {
+  const dir = "templates/github/workflows";
+  for (const f of readdirSync(join(FACTORY_ROOT, dir))) {
+    const text = read(join(dir, f));
+    if (f !== "nightly.yml") {
+      assert.ok(!text.includes("environment:"), `${f} must not reference a GitHub environment`);
+      continue;
+    }
+    const on = text.slice(text.indexOf("\non:\n") + 1, text.indexOf("\npermissions:"));
+    assert.deepEqual([...on.matchAll(/^  ([a-z_]+):/gm)].map((m) => m[1]), ["schedule", "workflow_dispatch"]);
+    const jobs = [...text.slice(text.indexOf("\njobs:\n")).matchAll(/^  ([a-z_]+):$/gm)].map((m) => m[1]);
+    assert.deepEqual(jobs, ["changes", ...LANES, "required"]);
+    assert.equal(text.split("    environment: nightly\n{{nightly_env}}\n").length - 1, LANES.length, "every lane job runs under the nightly environment with the env placeholder");
+  }
 });
 
 test("every uses: line is pinned to a commit SHA with its version, or to the factory ref, or is local", () => {
-  const files = ["templates/github/workflows/ci.yml", "templates/github/workflows/factory-light-approve.yml", "templates/github/workflows/pr-readiness.yml", "templates/github/workflows/review-relay.yml", "templates/github/workflows/release-please.yml", "templates/github/workflows/mutation.yml", "presets/python-uv/setup.yml", "presets/node-npm/setup.yml"];
+  const files = ["templates/github/workflows/ci.yml", "templates/github/workflows/nightly.yml", "templates/github/workflows/factory-light-approve.yml", "templates/github/workflows/pr-readiness.yml", "templates/github/workflows/review-relay.yml", "templates/github/workflows/release-please.yml", "templates/github/workflows/mutation.yml", "presets/python-uv/setup.yml", "presets/node-npm/setup.yml"];
   for (const f of files) {
     for (const line of read(f).split("\n").filter((l) => /^\s*(- )?uses:/.test(l))) {
       const ok = /uses: \.\//.test(line) || /@\{\{factory_ref\}\} # software-factories/.test(line) || /@[0-9a-f]{40} # v\d/.test(line)
@@ -53,11 +73,13 @@ test("every uses: line is pinned to a commit SHA with its version, or to the fac
   }
 });
 
-test("the factory's own CI equals the template rendered with local actions", () => {
-  const own = renderOwnTemplate(read("templates/github/workflows/ci.yml"));
-  assert.equal(read(".github/workflows/ci.yml"), own, "run: node ci/render-own.mjs");
-  assert.ok(own.includes("uses: ./actions/classify"));
-  assert.ok(!/\{\{(factory_|checkout_)/.test(own), "every placeholder was rendered");
+test("the factory's own CI and nightly workflows equal the templates rendered with local actions", () => {
+  for (const [source, dest] of Object.entries(OWN)) {
+    const own = renderOwn(source, read(source));
+    assert.equal(read(dest), own, `run: node ci/render-own.mjs (${dest})`);
+    assert.ok(own.includes("uses: ./actions/classify"));
+    assert.ok(!/\{\{(factory_|checkout_|nightly_)/.test(own), "every placeholder was rendered");
+  }
 });
 
 /** The YAML frontmatter of a workflow, as lines, without parsing: the checks below are shape checks on known keys. */

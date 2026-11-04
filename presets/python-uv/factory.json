@@ -2,26 +2,110 @@
   "version": 1,
   "preset": "python-uv",
   "commands": {
-    "install": { "label": "Install", "run": "uv sync" },
-    "test": { "label": "Test", "run": "uv run pytest" },
-    "lint": { "label": "Lint", "run": "uv run ruff check . && uv run ruff format --check ." },
-    "typecheck": { "label": "Typecheck", "run": "uv run mypy src tools" },
-    "structure": { "label": "Structure", "run": "uv run python tools/validate_structure.py" },
-    "nofakes": { "label": "No-fakes gate", "run": "bash scripts/check.sh" }
+    "install": {
+      "label": "Install",
+      "run": "uv sync"
+    },
+    "test": {
+      "label": "Test",
+      "run": "uv run pytest"
+    },
+    "lint": {
+      "label": "Lint",
+      "run": "uv run ruff check . && uv run ruff format --check ."
+    },
+    "typecheck": {
+      "label": "Typecheck",
+      "run": "uv run mypy src tools"
+    },
+    "structure": {
+      "label": "Structure",
+      "run": "uv run python tools/validate_structure.py"
+    },
+    "nofakes": {
+      "label": "No-fakes gate",
+      "run": "bash scripts/check.sh"
+    },
+    "acceptance": {
+      "label": "Acceptance",
+      "run": "uv run pytest tests/acceptance",
+      "note": "FACTORY_TIER=fast for the keyless features or full for every feature; CI sets it from the lane's tier"
+    }
   },
   "paths": {
-    "docs": ["docs/**", "*.md", "skills/**/*.md"],
-    "lockfiles": ["uv.lock"],
+    "docs": [
+      "docs/**",
+      "*.md",
+      "skills/**/*.md"
+    ],
+    "lockfiles": [
+      "uv.lock"
+    ],
     "protected": []
   },
   "lanes": {
-    "static": { "paths": [], "fast": ["lint", "typecheck", "structure", "nofakes"], "full": { "commands": [], "secrets": [] } },
-    "unit": { "paths": ["src/**", "tools/**", "tests/**", "demos/**", "pyproject.toml", "uv.lock"], "fast": ["test"], "full": { "commands": [], "secrets": [] } },
-    "integration": { "off": "no container dependency until tracing code lands (T8)" },
-    "acceptance": { "off": "the verification skill is generated in T8" },
-    "artifact": { "paths": [], "fast": [], "full": { "commands": [], "secrets": [] } }
+    "static": {
+      "paths": [],
+      "fast": [
+        "lint",
+        "typecheck",
+        "structure",
+        "nofakes"
+      ],
+      "full": {
+        "commands": [],
+        "secrets": []
+      }
+    },
+    "unit": {
+      "paths": [
+        "src/**",
+        "tools/**",
+        "tests/**",
+        "demos/**",
+        "pyproject.toml",
+        "uv.lock"
+      ],
+      "fast": [
+        "test"
+      ],
+      "full": {
+        "commands": [],
+        "secrets": []
+      }
+    },
+    "integration": {
+      "off": "no container dependency until tracing code lands (the roadmap's Phase 3)"
+    },
+    "acceptance": {
+      "paths": [
+        "src/**",
+        "tools/**",
+        "demos/**",
+        "tests/**",
+        "pyproject.toml",
+        "uv.lock"
+      ],
+      "fast": [
+        "acceptance"
+      ],
+      "full": {
+        "commands": [],
+        "secrets": []
+      }
+    },
+    "artifact": {
+      "paths": [],
+      "fast": [],
+      "full": {
+        "commands": [],
+        "secrets": []
+      }
+    }
   },
-  "artifact": { "ships_bundle": false },
+  "artifact": {
+    "ships_bundle": false
+  },
   "mutation": {
     "run": "rm -rf mutants reports/mutation && mkdir -p reports/mutation && uv run mutmut run && uv run mutmut export-cicd-stats && cp mutants/mutmut-cicd-stats.json reports/mutation/stats.json && uv run mutmut results > reports/mutation/results.txt",
     "threshold": 0.8

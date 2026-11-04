@@ -184,3 +184,7 @@ Rejected from opus: a fourth declaration required when protected files change (p
 ## Next implementation step
 
 `ci/factory.mjs`, `ci/config.mjs`, and `ci/classify.mjs` test-first, starting with classify cases for a docs-only diff, an unclaimed path, a rename into `docs/`, and the label-monotonicity property, driven against a scratch git repo.
+
+## The acceptance lane and the nightly tier
+
+The acceptance lane runs a project-owned runner, `tests/acceptance/test_features.py`, seeded from the python-uv preset. It drives the features in `tests/acceptance/features/` the way a reader of the README would: each feature's bash fences run from the repository root and check the observable result themselves. The map lives under `tests/`, not `.claude/`, because `.claude/` is protected from factory workflows and the builder must add a feature file whenever it adds a demo. The lane runner exports `FACTORY_TIER`, so one command serves both tiers: the pull-request lanes run the fast features, and `nightly.yml` runs every feature under the `nightly` environment with the secrets each lane's `full.secrets` names. `ci.yml` runs on pull requests only. A test fails the build when any other template references a GitHub environment.

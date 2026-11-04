@@ -45,6 +45,7 @@ What lands in the project, and who owns each file:
 | `.codex/hooks.json` | rendered | Codex hooks, paths rewritten to the project |
 | `.codex/hooks/guard.py` | managed | hook implementation |
 | `.github/workflows/ci.yml` | rendered | classifier, five lanes, and the required gate, pinned to the factory ref |
+| `.github/workflows/nightly.yml` | rendered | the full tier on a schedule and by dispatch: every lane with its keyed commands, under the nightly environment |
 | `.github/workflows/factory-light-approve.yml` | rendered | applies factory:approved to light-class issues through the App |
 | `.github/workflows/pr-readiness.yml` | rendered | the readiness status from the default branch; flips a green factory draft to ready and arms auto-merge on attestation |
 | `.github/workflows/review-relay.yml` | managed | turns a review event into a run the readiness check can follow from the default branch |
@@ -53,6 +54,8 @@ What lands in the project, and who owns each file:
 | `.github/pull_request_template.md` | managed | PR body sections and the blank attestation block |
 | `.github/ISSUE_TEMPLATE/change-request.yml` | managed | the change-request issue form the planner reads |
 | `.github/actions/factory-setup/action.yml` | seeded | the project's toolchain action, owned by the project |
+| `tests/acceptance/test_features.py` | seeded | the acceptance runner: drives every feature in tests/acceptance/features/ for the lane's tier |
+| `tests/acceptance/features/README.md` | seeded | the feature map's contract and index, owned by the project |
 | `.gitignore` | block | ignores the agent work log and reports |
 <!-- footprint:end -->
 

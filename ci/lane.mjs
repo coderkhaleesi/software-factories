@@ -2,13 +2,19 @@
  * Run one lane's commands from factory.json: install first, then the fast commands, then the
  * full-tier commands when the selection's tier is full. Each command runs under
  * `bash -euo pipefail`, and the first failure stops the lane with that command's exit code.
- * A full-tier secret that is absent from the environment fails before anything runs.
+ * A full-tier secret that is absent from the environment fails before anything runs. Every
+ * command sees FACTORY_TIER, so a project runner can select its own cases by tier.
  */
 
 import { execFileSync } from "node:child_process";
 import { parseArgs } from "node:util";
 import { LANES } from "./factory.mjs";
 import { loadConfig, commandsForLane } from "./config.mjs";
+
+/** The environment a lane command runs in: the caller's, plus the tier. */
+export function laneEnv(env, tier) {
+  return { ...env, FACTORY_TIER: tier };
+}
 
 export function missingSecrets(config, lane, tier, env) {
   if (tier !== "full") return [];
@@ -27,9 +33,10 @@ export function main(argv, env = process.env, cwd = process.cwd()) {
   const config = loadConfig(values.config);
   const missing = missingSecrets(config, values.lane, selection.tier, env);
   if (missing.length > 0) throw new Error(`missing secret ${missing.join(", ")} for the ${selection.tier} tier of lane ${values.lane}`);
+  const commandEnv = laneEnv(env, selection.tier);
   for (const { id, run } of commandsForLane(config, values.lane, selection.tier)) {
     process.stdout.write(`\n::group::${values.lane}: ${id}\n$ ${run}\n`);
-    execFileSync("bash", ["-euo", "pipefail", "-c", run], { cwd, env, stdio: "inherit" });
+    execFileSync("bash", ["-euo", "pipefail", "-c", run], { cwd, env: commandEnv, stdio: "inherit" });
     process.stdout.write("::endgroup::\n");
   }
 }

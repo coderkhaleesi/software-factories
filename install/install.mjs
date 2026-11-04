@@ -13,6 +13,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { MANIFEST } from "./manifest.mjs";
+import { LANES } from "../ci/factory.mjs";
 import { loadConfig, renderSection0, replaceSection0 } from "../ci/config.mjs";
 
 export const FACTORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -43,6 +44,21 @@ export function renderTemplate(text, ref) {
     .replaceAll("{{factory_ref7}}", ref.slice(0, 7)).replaceAll("{{checkout_sha}}", CHECKOUT_SHA);
 }
 
+/** The `env:` block the nightly jobs carry: one line per secret any on lane's full tier names, or nothing. */
+export function nightlyEnv(config) {
+  const names = [...new Set(LANES.flatMap((lane) => ("off" in config.lanes[lane] ? [] : config.lanes[lane].full.secrets)))].sort();
+  if (names.length === 0) return "";
+  return ["    env:", ...names.map((n) => `      ${n}: \${{ secrets.${n} }}`)].join("\n");
+}
+
+const NIGHTLY_ENV = "{{nightly_env}}";
+
+export function renderNightly(text, ref, config) {
+  if (!text.includes(NIGHTLY_ENV)) throw new Error(`nightly template has no ${NIGHTLY_ENV} placeholder`);
+  const env = nightlyEnv(config);
+  return renderTemplate(text, ref).split("\n").flatMap((line) => (line === NIGHTLY_ENV ? (env === "" ? [] : [env]) : [line])).join("\n");
+}
+
 /** The hook command names the checkout that generated the file; point it at the target instead. */
 function renderCodexHooks(text, target) {
   const pattern = /python3 '[^']*\/\.codex\/hooks\/guard\.py'/g;
@@ -61,6 +77,7 @@ function desired(entry, ctx) {
   if (entry.render === "agents") return Buffer.from(replaceSection0(text.toString("utf8"), renderSection0(ctx.config)));
   if (entry.render === "codex") return Buffer.from(renderCodexHooks(text.toString("utf8"), ctx.target));
   if (entry.render === "template") return Buffer.from(renderTemplate(text.toString("utf8"), ctx.ref));
+  if (entry.render === "nightly") return Buffer.from(renderNightly(text.toString("utf8"), ctx.ref, ctx.config));
   throw new Error(`manifest entry ${entry.path} has unknown render ${JSON.stringify(entry.render)}`);
 }
 

@@ -27,6 +27,8 @@ export const MANIFEST = Object.freeze([
   { path: ".codex/hooks/guard.py", ownership: "managed", source: ".codex/hooks/guard.py", role: "hook implementation" },
   { path: ".github/workflows/ci.yml", ownership: "rendered", source: "templates/github/workflows/ci.yml", render: "template",
     role: "classifier, five lanes, and the required gate, pinned to the factory ref" },
+  { path: ".github/workflows/nightly.yml", ownership: "rendered", source: "templates/github/workflows/nightly.yml", render: "nightly",
+    role: "the full tier on a schedule and by dispatch: every lane with its keyed commands, under the nightly environment" },
   { path: ".github/workflows/factory-light-approve.yml", ownership: "rendered", source: "templates/github/workflows/factory-light-approve.yml", render: "template",
     role: "applies factory:approved to light-class issues through the App" },
   { path: ".github/workflows/pr-readiness.yml", ownership: "rendered", source: "templates/github/workflows/pr-readiness.yml", render: "template",
@@ -43,6 +45,10 @@ export const MANIFEST = Object.freeze([
     role: "the change-request issue form the planner reads" },
   { path: ".github/actions/factory-setup/action.yml", ownership: "seeded", source: "presets/{preset}/setup.yml",
     role: "the project's toolchain action, owned by the project" },
+  { path: "tests/acceptance/test_features.py", ownership: "seeded", source: "presets/{preset}/acceptance/test_features.py", when: ["python-uv"],
+    role: "the acceptance runner: drives every feature in tests/acceptance/features/ for the lane's tier" },
+  { path: "tests/acceptance/features/README.md", ownership: "seeded", source: "presets/{preset}/acceptance/features/README.md", when: ["python-uv"],
+    role: "the feature map's contract and index, owned by the project" },
   { path: ".gitignore", ownership: "block", source: "install/gitignore.lines", role: "ignores the agent work log and reports" },
 ].map(Object.freeze));
 
